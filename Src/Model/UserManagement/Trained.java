@@ -6,17 +6,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Trained extends User{
-    private List<PersonalTrainer> personaltrainers;
-
     public Trained(int id, String name, int age) {
         super(id, name, age);
-        personaltrainers=new ArrayList<>();
+        this.personaltrainers=new ArrayList<>();
     }
 
     @Override
-    public void update() {
-        System.out.println("Personaltrainers list updated!");
+    public void update(String context) {
+        if(context=="WorkoutPlanUpdate"){                 //if is useless, because a Trained will never be notified for a WorkoutRecord Update!
+            System.out.println("Workout Plan Updated!");
+        }
     }
+
     private void AddPersonalTrainer(PersonalTrainer pt) {
         boolean alreadyPresent = false;
         for (PersonalTrainer trainer : this.personaltrainers) {
@@ -27,7 +28,7 @@ public class Trained extends User{
         }
         if (!alreadyPresent) {
             this.personaltrainers.add(pt);
-            System.out.println("personal trainer succesfully added.");
+            System.out.println("Personal trainer successfully added.");
         } else {
             System.out.println("Personal trainer already added.");
         }

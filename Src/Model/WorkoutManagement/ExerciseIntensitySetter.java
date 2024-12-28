@@ -1,4 +1,7 @@
 package Model.WorkoutManagement;
 
-public class ExerciseIntensitySetter {
+public interface ExerciseIntensitySetter {
+    int setNSets();
+    int setNReps();
 }
+

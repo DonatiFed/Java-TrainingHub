@@ -10,19 +10,24 @@ import Model.WorkoutManagement.Workout4Record;
 import java.util.List;
 
 public abstract class User extends Observer{
-    private int id;
-    private String name;
-    private int age;
-    private List<Workout4Plan> workoutplan;
-    private List<Workout4Record> workoutrecord;
+    protected int id;
+    protected String name;
+    protected int age;
+    protected List<Workout4Record> workoutrecord;   //For the moment I preferred to leave only one Record for each usr, but then we can implement a solution with many records
+    protected List<PersonalTrainer> personaltrainers;
 
+    public List<PersonalTrainer> getPersonaltrainers() {
+        return personaltrainers;
+    }
 
-    public User(int id,String name,int age){
+    public void setPersonaltrainers(List<PersonalTrainer> personaltrainers) {
+        this.personaltrainers = personaltrainers;
+    }
+
+    public User(int id, String name, int age){
         this.id = id;
         this.name = name;
         this.age = age;
-        // Inizializzo le liste
-        this.workoutplan = new ArrayList<>();
         this.workoutrecord = new ArrayList<>();
     }
 
@@ -42,13 +47,7 @@ public abstract class User extends Observer{
         this.age = age;
     }
 
-    public List<Workout4Plan> getWorkoutplan() {
-        return workoutplan;
-    }
 
-    public void setWorkoutplan(List<Workout4Plan> workoutplan) {
-        this.workoutplan = workoutplan;
-    }
 
     public List<Workout4Record> getWorkoutrecord() {
         return workoutrecord;

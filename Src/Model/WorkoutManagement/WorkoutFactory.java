@@ -1,4 +1,5 @@
 package Model.WorkoutManagement;
 
-public class WorkoutFactory {
+public abstract interface WorkoutFactory {
+    public abstract Workout createWorkout();
 }

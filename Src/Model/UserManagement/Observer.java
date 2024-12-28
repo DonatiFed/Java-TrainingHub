@@ -1,5 +1,5 @@
 package Model.UserManagement;
 
 public abstract class Observer {
-    public abstract void update();
+    public abstract void update(String context);
 }
