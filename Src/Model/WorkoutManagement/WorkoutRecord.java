@@ -29,50 +29,32 @@ public class WorkoutRecord extends WorkoutSubject{
         }
 
     }
-    public void addWorkout(Workout4Record workout){ //workout object passed here, otherwise we could create a new one while putting in the record;
-        workouts.add(workout);
-        this.lastEditDate=java.time.LocalDate.now().toString();
-        notifyObservers();
-    }
-    public void removeWorkout(Workout4Record workout) {
-        boolean isPresent = false;
-        for (Workout4Record wr : this.workouts) {
-            if (wr.getId() == workout.getId()) {
-                isPresent = true;
-                break;
-            }
-        }
-        if (!isPresent) {
-            System.out.println("Workout not found.");
-        } else {
-            this.workouts.remove(workout);
-            this.lastEditDate = java.time.LocalDate.now().toString();
-            System.out.println("Workout successfully removed.");
-            notifyObservers();
-        }
-    }
-    public void editWorkout(Workout4Record workout, int newId,String newDate) {
-        boolean isPresent = false;
-        for (Workout4Record wr : this.workouts) {
-            if (wr.getId() == workout.getId()) {
-                isPresent = true;
-                break;
-            }
-        }
-        if (!isPresent) {
-            System.out.println("Workout not found.");
-        } else {
-            workout.setId(newId);
-            workout.setDate(newDate);
-            this.lastEditDate = java.time.LocalDate.now().toString();
-            System.out.println("Workout successfully edited.");
-            notifyObservers();
-        }
-    }
+
     @Override
     public void notifyObservers() {
         for(Observer pt:observers){
             pt.update("WorkoutRecordUpdate"); //I expect to be notified all the user's pts
         }
     }
+
+    public String getLastEditDate() {
+        return lastEditDate;
+    }
+
+    public void setLastEditDate(String lastEditDate) {
+        this.lastEditDate = lastEditDate;
+    }
+
+    public int getnWorkouts() {
+        return nWorkouts;
+    }
+
+    public void setnWorkouts(int nWorkouts) {
+        this.nWorkouts = nWorkouts;
+    }
+
+    public List<Workout4Record> getWorkouts() {
+        return workouts;
+    }
+
 }
