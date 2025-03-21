@@ -22,30 +22,6 @@ public class Workout4Plan extends Workout{
 
     }
 
-    /* RemoveExercise variant using Iterator pattern(using Java's library implementation):
-
-    public void RemoveExercise(Exercise exercise) {
-        Iterator<Exercise> iterator = this.exercises.iterator();
-        boolean isPresent = false;
-
-        while (iterator.hasNext()) {
-            Exercise ex = iterator.next();
-            if (ex.getName().equals(exercise.getName())) {
-                iterator.remove();
-                isPresent = true;
-                break;
-            }
-        }
-
-        if (!isPresent) {
-            System.out.println("Exercise not found.");
-        } else {
-            System.out.println("Exercise successfully removed.");
-        }
-    }*/
-
-
-
     public String getDay() {
         return day;
     }

@@ -1,6 +1,7 @@
 package Model.WorkoutManagement;
 
 public class Exercise {
+    private int id;
     private String name;
     private String description;
     private String equipment;
@@ -12,7 +13,8 @@ public class Exercise {
 
 
     // With Strategy Constructor(4Plan)
-    public Exercise(String name, String description, String equipment, int n_sets, int n_reps, int weight, ExerciseIntensitySetter strategy){
+    public Exercise(int id,String name, String description, String equipment, int n_sets, int n_reps, int weight, ExerciseIntensitySetter strategy){
+        this.id = id;
         this.name=name;
         this.description=description;
         this.equipment=equipment;
@@ -22,7 +24,8 @@ public class Exercise {
         this.strategy=strategy;
     }
     // Without Strategy Constructor(4Record)
-    public Exercise(String name, String equipment, int n_sets, int n_reps, int weight) {
+    public Exercise(int id ,String name, String equipment, int n_sets, int n_reps, int weight) {
+        this.id = id;
         this.name = name;
         this.equipment = equipment;
         this.n_sets = n_sets;
@@ -41,6 +44,9 @@ public class Exercise {
     }
 
 
+    public int getId() {
+        return id;
+    }
 
     public String getName() {
         return this.name;
