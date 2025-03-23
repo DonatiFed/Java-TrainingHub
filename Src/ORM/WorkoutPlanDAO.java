@@ -105,7 +105,7 @@ public class WorkoutPlanDAO {
     public List<Workout4Plan> getWorkout4PlansByWorkoutPlanId(int wpId) {
         List<Workout4Plan> workout4Plans = new ArrayList<>();
         String sql = "SELECT w4p.w4p_id, w4p.day, w4p.strategy " +
-                "FROM Workout4Plans w4p " +
+                "FROM Workout4Plan w4p " +
                 "JOIN WorkoutPlans_Workout4Plans wpp ON w4p.w4p_id = wpp.w4p_id " +
                 "WHERE wpp.wp_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {

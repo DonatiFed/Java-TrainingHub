@@ -12,9 +12,9 @@ public class Workout4RecordDAOTest {
     public static void main(String[] args) {
         Workout4RecordDAO dao = new Workout4RecordDAO();
 
-        // 1. Test Adding a Workout4Record
+        /* 1. Test Adding a Workout4Record
         System.out.println("=== Adding a new Workout4Record ===");
-        Workout4Record newRecord = dao.addWorkout4Record("2025-03-22");
+        Workout4Record newRecord = dao.addWorkout4Record("2025-06-22");
         if (newRecord != null) {
             System.out.println("Workout4Record added: ID = " + newRecord.getId() + ", Date = " + newRecord.getDate());
         } else {
@@ -46,7 +46,7 @@ public class Workout4RecordDAOTest {
             System.out.println("Updated Record - ID: " + updatedRecord.getId() + ", Date: " + updatedRecord.getDate());
         }
 
-        // 5. Test Deleting a Workout4Record
+         5. Test Deleting a Workout4Record
         if (newRecord != null) {
             System.out.println("\n=== Deleting Workout4Record ===");
             dao.deleteWorkout4Record(newRecord.getId());
@@ -56,7 +56,9 @@ public class Workout4RecordDAOTest {
             } else {
                 System.out.println("Failed to delete record.");
             }
-        }
+        }*/
+        //ADD an exercise
+        dao.addExerciseToWorkout4Record(5,7);
     }
 }
 

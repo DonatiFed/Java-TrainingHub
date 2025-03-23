@@ -26,11 +26,11 @@ public class WorkoutPlanDAOTest {
         //workoutPlanDAO.deleteWorkoutPlan(2);
 
         //ADD WORKOUT
-        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(3,6);
-        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(3,7);
-        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(4,8);
-        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(4,9);
-        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(4,10);
+        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(7,6);
+        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(7,7);
+        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(9,8);
+        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(9,9);
+        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(9,10);
 
         //  Verify Deletion
         plans = workoutPlanDAO.getAllWorkoutPlans();

@@ -32,12 +32,12 @@ public class Workout4PlanDAOTest { // Se la strategy inserita non è delle 3 giu
 
         //  UPDATE
         System.out.println(" Updating Workout4Plan...");
-        workoutDAO.updateWorkout4Plan(1, "Tuesday", "hypertrophy");
+        //workoutDAO.updateWorkout4Plan(1, "Tuesday", "hypertrophy");
 
         //ADD workout
-        workout4PlanDAO.addExerciseToWorkout4Plan(1,5);
-        workout4PlanDAO.addExerciseToWorkout4Plan(2,5);
-        workout4PlanDAO.addExerciseToWorkout4Plan(1,6);
+        workout4PlanDAO.addExerciseToWorkout4Plan(6,5);
+        workout4PlanDAO.addExerciseToWorkout4Plan(7,5);
+        workout4PlanDAO.addExerciseToWorkout4Plan(6,6);
 
         //  Verify Deletion
         workouts = workoutDAO.getAllWorkout4Plans();

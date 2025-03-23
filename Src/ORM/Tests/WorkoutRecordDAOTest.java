@@ -13,7 +13,7 @@ public class WorkoutRecordDAOTest {
 
         //  CREATE
         System.out.println(" Adding WorkoutRecord...");
-        workoutRecordDAO.addWorkoutRecord();
+        //workoutRecordDAO.addWorkoutRecord();
 
         //  READ
         List<WorkoutRecord> records = workoutRecordDAO.getAllWorkoutRecords();
@@ -26,6 +26,9 @@ public class WorkoutRecordDAOTest {
         //  Verify Deletion
         records = workoutRecordDAO.getAllWorkoutRecords();
         System.out.println(" Remaining WorkoutRecords: " + records);
+
+        //ADD Workout4Record
+        workoutRecordDAO.addWorkout4RecordToWorkoutRecord(3,6);
     }
 }
 
