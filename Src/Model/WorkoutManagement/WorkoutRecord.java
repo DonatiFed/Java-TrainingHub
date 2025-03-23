@@ -11,23 +11,17 @@ public class WorkoutRecord extends WorkoutSubject{
     private String lastEditDate;
     private int nWorkouts;
     private List<Workout4Record> workouts;
-    private User user;
 
 
 
 
     //IN WORKOUT RECORD THERE WILL BE ONLY OBSERVERS OF THE USER'S PT
-    public WorkoutRecord(User user,int id){
+    public WorkoutRecord(int id){
         super();
         this.lastEditDate=java.time.LocalDate.now().toString();
         this.nWorkouts=0;
-        this.user=user;
         this.workouts=new ArrayList<>();
         this.id=id;
-        for(PersonalTrainer pt:user.getPersonaltrainers()){
-            this.attach(pt); //I don't need the attribute User's pts, since they are the observers that I attach...and I attach only them
-        }
-
     }
 
     @Override

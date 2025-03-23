@@ -3,6 +3,7 @@ package ORM;
 import Model.UserManagement.PersonalTrainer;
 import Model.UserManagement.Trainee;
 import Model.WorkoutManagement.WorkoutPlan;
+import Model.WorkoutManagement.WorkoutRecord;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,13 +17,44 @@ public class TraineeDAO {
     }
 
     //  CREATE: Add a new Trainee
-    public void addTrainee(String name, int age) {
-        String sql = "INSERT INTO AppUser (name, age, is_pt) VALUES (?, ?, false)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, name);
-            stmt.setInt(2, age);
+    public Trainee addTrainee(String name, int age) {
+        String sqlUser = "INSERT INTO AppUser (user_name, user_age, is_pt) VALUES (?, ?, false)";
+        try (PreparedStatement stmtUser = connection.prepareStatement(sqlUser, Statement.RETURN_GENERATED_KEYS)) {
+            stmtUser.setString(1, name);
+            stmtUser.setInt(2, age);
+            stmtUser.executeUpdate();
+
+            // Get the generated user ID
+            try (ResultSet generatedKeys = stmtUser.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int userId = generatedKeys.getInt(1);
+                    Trainee trainee = new Trainee(userId, name, age);
+
+                    //  Create WorkoutRecord for the new Trainee
+                    WorkoutRecordDAO workoutRecordDAO = new WorkoutRecordDAO();
+                    WorkoutRecord workoutRecord = workoutRecordDAO.addWorkoutRecord();
+
+                    //  Link user to WorkoutRecord in the relation table
+                    if (workoutRecord != null) {
+                        linkWorkoutRecordToUser(userId, workoutRecord.getId());
+                    }
+                    return trainee;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null; // Error
+    }
+
+    //  Function to Link WorkoutRecord to User in the Relation Table
+    private void linkWorkoutRecordToUser(int userId, int workoutRecordId) {
+        String sql = "INSERT INTO WorkoutRecords_AppUser (user_id, wr_id) VALUES (?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            stmt.setInt(2, workoutRecordId);
             stmt.executeUpdate();
-            System.out.println(" Trainee added successfully!");
+            System.out.println("WorkoutRecord linked to Trainee successfully!");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -36,8 +68,8 @@ public class TraineeDAO {
             while (rs.next()) {
                 trainees.add(new Trainee(
                         rs.getInt("user_id"),
-                        rs.getString("name"),
-                        rs.getInt("age")
+                        rs.getString("user_name"),
+                        rs.getInt("user_age")
                 ));
             }
         } catch (SQLException e) {
@@ -52,12 +84,12 @@ public class TraineeDAO {
         String sql = "SELECT wp.wp_id, wp.last_edit_date " +
                 "FROM WorkoutPlans wp " +
                 "JOIN WorkoutPlans_PersonalTrainer_AppUser wpt ON wp.wp_id = wpt.wp_id " +
-                "WHERE wpt.user_id = ?";
+                "WHERE wpt.trainee_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    workoutPlans.add(new WorkoutPlan(null, rs.getInt("wp_id")));
+                    workoutPlans.add(new WorkoutPlan( rs.getInt("wp_id")));
                 }
             }
         } catch (SQLException e) {
@@ -68,19 +100,19 @@ public class TraineeDAO {
 
     //  READ: Get the PT assigned to a User ID (returning a PersonalTrainer object)
     public PersonalTrainer getPTForUserId(int userId) {
-        String sql = "SELECT pt.user_id, a.name, a.age " +
-                "FROM PersonalTrainersTable pt " +
-                "JOIN AppUser a ON pt.user_id = a.user_id " +
-                "JOIN WorkoutPlans_PersonalTrainer_AppUser wpt ON pt.user_id = wpt.pt_id " +
-                "WHERE wpt.user_id = ?";
+        String sql = "SELECT pt.pt_id, a.user_name, a.user_age " +
+                "FROM Personal_Trainer pt " +
+                "JOIN AppUser a ON pt.pt_id = a.user_id " +
+                "JOIN WorkoutPlans_PersonalTrainer_AppUser wpt ON pt.pt_id = wpt.pt_id " +
+                "WHERE wpt.trainee_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new PersonalTrainer(
                             rs.getInt("user_id"),
-                            rs.getString("name"),
-                            rs.getInt("age")
+                            rs.getString("user_name"),
+                            rs.getInt("user_age")
                     );
                 }
             }
@@ -92,7 +124,7 @@ public class TraineeDAO {
 
     //  UPDATE: Edit a User (Modify Name and Age)
     public void editUser(int userId, String newName, int newAge) {
-        String sql = "UPDATE AppUser SET name = ?, age = ? WHERE user_id = ?";
+        String sql = "UPDATE AppUser SET user_name = ?, user_age = ? WHERE user_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, newName);
             stmt.setInt(2, newAge);

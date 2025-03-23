@@ -13,13 +13,14 @@ public class WorkoutPlanDAO {
     public WorkoutPlanDAO() {
         this.connection = DatabaseManager.getConnection();
     }
+    //Todo: Last_edit_date is dateType in the db, but a string for the WorkoutPlanClass
 
     // CREATE: Insert a new WorkoutPlan
-    public WorkoutPlan addWorkoutPlan(Observer traineeUser) {
+    public WorkoutPlan addWorkoutPlan() {
         String sql = "INSERT INTO WorkoutPlans (last_edit_date) VALUES (?)";
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            String currentDate = java.time.LocalDate.now().toString();
-            stmt.setString(1, currentDate);
+            java.sql.Date currentDate = java.sql.Date.valueOf(java.time.LocalDate.now());
+            stmt.setDate(1, currentDate);
             int affectedRows = stmt.executeUpdate();
 
             if (affectedRows == 0) {
@@ -29,7 +30,7 @@ public class WorkoutPlanDAO {
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int id = generatedKeys.getInt(1);
-                    return new WorkoutPlan(traineeUser, id);  // Creating WorkoutPlan object
+                    return new WorkoutPlan(id);  // Creating WorkoutPlan object
                 } else {
                     throw new SQLException("Creating WorkoutPlan failed, no ID obtained.");
                 }
@@ -47,10 +48,11 @@ public class WorkoutPlanDAO {
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 int id = rs.getInt("wp_id");
-                String lastEditDate = rs.getString("last_edit_date");
+                java.sql.Date lastEditDate = rs.getDate("last_edit_date");
 
-                WorkoutPlan plan = new WorkoutPlan(null, id); // No observer at this stage
-                plan.setLastEditDate(lastEditDate);
+                WorkoutPlan plan = new WorkoutPlan( id); // No observer at this stage
+                String lastEditDateStr = (lastEditDate != null) ? lastEditDate.toString() : null;
+                plan.setLastEditDate(lastEditDateStr);
 
                 // Fetch associated Workout4Plans
                 plan.getWorkouts().addAll(getWorkout4PlansByWorkoutPlanId(id));
@@ -70,10 +72,11 @@ public class WorkoutPlanDAO {
             stmt.setInt(1, wpId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    String lastEditDate = rs.getString("last_edit_date");
-                    WorkoutPlan plan = new WorkoutPlan(null, wpId);
-                    plan.setLastEditDate(lastEditDate);
+                    java.sql.Date lastEditDate = rs.getDate("last_edit_date");
+                    WorkoutPlan plan = new WorkoutPlan(wpId);
 
+                    String lastEditDateStr = (lastEditDate != null) ? lastEditDate.toString() : null;
+                    plan.setLastEditDate(lastEditDateStr);
                     // Fetch associated Workout4Plans
                     plan.getWorkouts().addAll(getWorkout4PlansByWorkoutPlanId(wpId));
 
@@ -101,7 +104,7 @@ public class WorkoutPlanDAO {
     // GET Workout4Plans for a given WorkoutPlan (returns Workout4Plan objects)
     public List<Workout4Plan> getWorkout4PlansByWorkoutPlanId(int wpId) {
         List<Workout4Plan> workout4Plans = new ArrayList<>();
-        String sql = "SELECT w4p.w4p_id, w4p.day_of_week, w4p.strategy " +
+        String sql = "SELECT w4p.w4p_id, w4p.day, w4p.strategy " +
                 "FROM Workout4Plans w4p " +
                 "JOIN WorkoutPlans_Workout4Plans wpp ON w4p.w4p_id = wpp.w4p_id " +
                 "WHERE wpp.wp_id = ?";
@@ -110,7 +113,7 @@ public class WorkoutPlanDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     int id = rs.getInt("w4p_id");
-                    String dayOfWeek = rs.getString("day_of_week");
+                    String dayOfWeek = rs.getString("day");
                     String strategy = rs.getString("strategy");
 
                     Workout4Plan workout4Plan = new Workout4Plan(dayOfWeek, strategy,id );

@@ -12,10 +12,9 @@ public class WorkoutPlan extends WorkoutSubject{
 
 
     //IN WORKOUT PLAN THERE WILL BE ONLY OBSERVERS OF PEOPLE TO WHOM THE WORKOUT PLAN IS DEDICATED(WHETHER IT'S A TRAINED OR ANOTHER PT)
-    public WorkoutPlan(Observer traineeUser,int id){
+    public WorkoutPlan(int id){
         super();
-        this.lastEditDate = java.time.LocalDate.now().toString();
-        this.attach(traineeUser);    //I don't need the attribute "trainee User", but that is the only observer I will attach
+        this.lastEditDate = java.time.LocalDate.now().toString(); //I don't need the attribute "trainee User", but that is the only observer I will attach
         workouts=new ArrayList<>();
         this.id=id;
     }

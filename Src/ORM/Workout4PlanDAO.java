@@ -19,7 +19,7 @@ public class Workout4PlanDAO {
 
     // CREATE: Add a Workout4Plan
     public Workout4Plan addWorkout4Plan(String dayOfWeek, String strategyType) {
-        String sql = "INSERT INTO Workout4Plans (day, strategy) VALUES (?, ?)";
+        String sql = "INSERT INTO Workout4Plan (day, strategy) VALUES (?, ?)";
 
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, dayOfWeek);
@@ -49,7 +49,7 @@ public class Workout4PlanDAO {
     // READ: Get all Workout4Plans
     public List<Workout4Plan> getAllWorkout4Plans() {
         List<Workout4Plan> workoutPlans = new ArrayList<>();
-        String sql = "SELECT * FROM Workout4Plans";
+        String sql = "SELECT * FROM Workout4Plan";
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 int id = rs.getInt("w4p_id");
@@ -68,7 +68,7 @@ public class Workout4PlanDAO {
 
     // READ: Get a Workout4Plan by ID
     public Workout4Plan getWorkout4PlanById(int id) {
-        String sql = "SELECT * FROM Workout4Plans WHERE w4p_id = ?";
+        String sql = "SELECT * FROM Workout4Plan WHERE w4p_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -89,7 +89,7 @@ public class Workout4PlanDAO {
 
     // UPDATE: Modify Day of the Week or Strategy
     public void updateWorkout4Plan(int id, String newDayOfWeek, String newStrategy) {
-        String sql = "UPDATE Workout4Plans SET day = ?, strategy = ? WHERE w4p_id = ?";
+        String sql = "UPDATE Workout4Plan SET day = ?, strategy = ? WHERE w4p_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, newDayOfWeek);
             stmt.setString(2, newStrategy);
@@ -103,7 +103,7 @@ public class Workout4PlanDAO {
 
     // DELETE: Remove a Workout4Plan
     public void deleteWorkout4Plan(int id) {
-        String sql = "DELETE FROM Workout4Plans WHERE w4p_id = ?";
+        String sql = "DELETE FROM Workout4Plan WHERE w4p_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();

@@ -15,11 +15,11 @@ public class WorkoutRecordDAO {
     }
 
     // CREATE: Insert a new WorkoutRecord (returns WorkoutRecord object)
-    public WorkoutRecord addWorkoutRecord(User user) {
+    public WorkoutRecord addWorkoutRecord() {
         String sql = "INSERT INTO WorkoutRecords (last_edit_date, N_workouts) VALUES (?, 0)";
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            String currentDate = java.time.LocalDate.now().toString();
-            stmt.setString(1, currentDate);
+            java.sql.Date currentDate = java.sql.Date.valueOf(java.time.LocalDate.now()); // Convert LocalDate to SQL Date
+            stmt.setDate(1, currentDate);
             int affectedRows = stmt.executeUpdate();
 
             if (affectedRows == 0) {
@@ -29,7 +29,7 @@ public class WorkoutRecordDAO {
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int id = generatedKeys.getInt(1);
-                    return new WorkoutRecord(user, id);  // Creating WorkoutRecord object
+                    return new WorkoutRecord(id);  // Creating WorkoutRecord object
                 } else {
                     throw new SQLException("Creating WorkoutRecord failed, no ID obtained.");
                 }
@@ -47,10 +47,10 @@ public class WorkoutRecordDAO {
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 int id = rs.getInt("wr_id");
-                String lastEditDate = rs.getString("last_edit_date");
+                String lastEditDate = rs.getDate("last_edit_date").toString(); // Convert SQL Date to String
                 int nWorkouts = rs.getInt("N_workouts");
 
-                WorkoutRecord record = new WorkoutRecord(null, id); // No user reference at this stage
+                WorkoutRecord record = new WorkoutRecord( id); // No user reference at this stage
                 record.setLastEditDate(lastEditDate);
                 record.setnWorkouts(nWorkouts);
 
@@ -72,10 +72,10 @@ public class WorkoutRecordDAO {
             stmt.setInt(1, wrId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    String lastEditDate = rs.getString("last_edit_date");
+                    String lastEditDate = rs.getDate("last_edit_date").toString();
                     int nWorkouts = rs.getInt("N_workouts");
 
-                    WorkoutRecord record = new WorkoutRecord(null, wrId);
+                    WorkoutRecord record = new WorkoutRecord( wrId);
                     record.setLastEditDate(lastEditDate);
                     record.setnWorkouts(nWorkouts);
 

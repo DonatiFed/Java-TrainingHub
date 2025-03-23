@@ -1,7 +1,6 @@
 package ORM.Tests;
 
 import Model.UserManagement.Trainee;
-import ORM.TraineeDAO;
 import ORM.WorkoutRecordDAO;
 import Model.WorkoutManagement.WorkoutRecord;
 
@@ -10,19 +9,15 @@ import java.util.List;
 public class WorkoutRecordDAOTest {
     public static void main(String[] args) {
         WorkoutRecordDAO workoutRecordDAO = new WorkoutRecordDAO();
+        Trainee trainee = new Trainee(5,"Mago",20);
 
         //  CREATE
-        TraineeDAO traineeDAO = new TraineeDAO();
-        Trainee trainee = new Trainee(5,"luca",5);
         System.out.println(" Adding WorkoutRecord...");
-        workoutRecordDAO.addWorkoutRecord(trainee);
+        workoutRecordDAO.addWorkoutRecord();
 
         //  READ
-        List<WorkoutRecord> records = workoutRecordDAO.getAllWorkoutRecords();    //TODO: cast date data type from date to string
-        for (WorkoutRecord record : records) {
-            System.out.println(record.toString());
-        }
-        System.out.println(" Retrieved WorkoutRecords: " + records.get(0).getId());
+        List<WorkoutRecord> records = workoutRecordDAO.getAllWorkoutRecords();
+        System.out.println(" Retrieved WorkoutRecords: " + records);
 
         //  DELETE
         System.out.println(" Deleting WorkoutRecord...");
@@ -33,3 +28,4 @@ public class WorkoutRecordDAOTest {
         System.out.println(" Remaining WorkoutRecords: " + records);
     }
 }
+

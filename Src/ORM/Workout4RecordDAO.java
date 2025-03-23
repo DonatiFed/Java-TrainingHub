@@ -9,6 +9,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+//Todo: date is dateType in the db, but a string for the Workout4Record Class
 public class Workout4RecordDAO {
     private final Connection connection;
 
@@ -18,9 +19,9 @@ public class Workout4RecordDAO {
 
     // CREATE: Add a Workout4Record
     public Workout4Record addWorkout4Record(String date) {
-        String sql = "INSERT INTO Workout4Records (date) VALUES (?)";
+        String sql = "INSERT INTO Workout4Record (date) VALUES (?)";
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, date);
+            stmt.setDate(1, java.sql.Date.valueOf(date));
             int affectedRows = stmt.executeUpdate();
 
             if (affectedRows == 0) {
@@ -44,7 +45,7 @@ public class Workout4RecordDAO {
     // READ: Get all Workout4Records
     public List<Workout4Record> getAllWorkout4Records() {
         List<Workout4Record> workoutRecords = new ArrayList<>();
-        String sql = "SELECT * FROM Workout4Records";
+        String sql = "SELECT * FROM Workout4Record";
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 int id = rs.getInt("w4r_id");
@@ -61,12 +62,12 @@ public class Workout4RecordDAO {
 
     // READ: Get a Workout4Record by ID
     public Workout4Record getWorkout4RecordById(int id) {
-        String sql = "SELECT * FROM Workout4Records WHERE w4r_id = ?";
+        String sql = "SELECT * FROM Workout4Record WHERE w4r_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    String date = rs.getString("date");
+                    String date = rs.getDate("date").toString();
                     Workout4Record record = new Workout4Record(date, id);
                     record.setExercises(getExercisesForWorkout4Record(id)); // Attach exercises
                     return record;
@@ -80,9 +81,9 @@ public class Workout4RecordDAO {
 
     // UPDATE: Modify Date
     public void updateWorkout4RecordDate(int id, String newDate) {
-        String sql = "UPDATE Workout4Records SET date = ? WHERE w4r_id = ?";
+        String sql = "UPDATE Workout4Record SET date = ? WHERE w4r_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, newDate);
+            stmt.setDate(1, java.sql.Date.valueOf(newDate));
             stmt.setInt(2, id);
             stmt.executeUpdate();
             System.out.println("Workout4Record date updated successfully!");
@@ -93,7 +94,7 @@ public class Workout4RecordDAO {
 
     // DELETE: Remove a Workout4Record
     public void deleteWorkout4Record(int id) {
-        String sql = "DELETE FROM Workout4Records WHERE w4r_id = ?";
+        String sql = "DELETE FROM Workout4Record WHERE w4r_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             stmt.executeUpdate();
