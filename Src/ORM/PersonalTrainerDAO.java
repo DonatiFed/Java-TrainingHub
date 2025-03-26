@@ -132,7 +132,7 @@ public class PersonalTrainerDAO {
     //  READ: Get all users trained by a PT (returns a mix of Trainees & PersonalTrainers)
     public List<User> getUsersOfPT(int ptId) {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT u.user_id, u.name, u.age, u.is_pt " +
+        String sql = "SELECT u.user_id, u.user_name, u.user_age, u.is_pt " +
                 "FROM AppUser u " +
                 "JOIN WorkoutPlans_PersonalTrainer_AppUser wpt " +
                 "ON u.user_id = wpt.trainee_id " +
