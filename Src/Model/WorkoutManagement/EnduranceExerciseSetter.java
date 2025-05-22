@@ -1,7 +1,7 @@
 package Model.WorkoutManagement;
 
 
-public class EnduranceExercise implements ExerciseIntensitySetter {
+public class EnduranceExerciseSetter implements ExerciseIntensitySetter {
     @Override
     public int setNSets() {
         return 3; //  3 sets for endurance

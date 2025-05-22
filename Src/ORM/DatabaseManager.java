@@ -7,7 +7,8 @@ import java.sql.SQLException;
 public class DatabaseManager {
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     private static final String USER = "postgres";
-    private static final String PASSWORD = System.getenv("DATABASE_PASSWORD"); //TODO: Look if it is added to env variables for the application running
+  //  private static final String PASSWORD = System.getenv("DATABASE_PASSWORD"); //TODO: Look if it is added to env variables for the application running
+    private static final String PASSWORD = "postgres";
     private static Connection connection = null;
 
     // Private constructor to prevent instantiation

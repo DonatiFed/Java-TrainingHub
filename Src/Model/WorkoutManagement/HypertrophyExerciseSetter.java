@@ -1,6 +1,6 @@
 package Model.WorkoutManagement;
 
-public class HypertrophyExercise implements ExerciseIntensitySetter {
+public class HypertrophyExerciseSetter implements ExerciseIntensitySetter {
     @Override
     public int setNSets() {
         return 4; // 4 sets for hypertrophy

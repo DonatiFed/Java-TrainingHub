@@ -13,30 +13,31 @@ public class Exercise {
 
 
     // With Strategy Constructor(4Plan)
-    public Exercise(int id,String name, String description, String equipment, int n_sets, int n_reps, int weight, ExerciseIntensitySetter strategy){
+    public Exercise(int id,String name, String description, String equipment, ExerciseIntensitySetter strategy){
         this.id = id;
         this.name=name;
         this.description=description;
         this.equipment=equipment;
-        this.n_sets=0;
-        this.n_reps=0;
-        this.weight=0;
+        this.n_sets=strategy.setNSets();
+        this.n_reps=strategy.setNReps();
+       // this.weight = null;   //  essendo weight un int invece che integer è settato di base=0
         this.strategy=strategy;
     }
     // Without Strategy Constructor(4Record)
-    public Exercise(int id ,String name, String equipment, int n_sets, int n_reps, int weight) {
+    public Exercise(int id ,String name,String description, String equipment, int n_sets, int n_reps, int weight,ExerciseIntensitySetter strategy) {
         this.id = id;
         this.name = name;
         this.equipment = equipment;
         this.n_sets = n_sets;
         this.n_reps = n_reps;
         this.weight = weight;
-        this.description = "";
-        this.strategy = null;
+        this.description = description;
+        this.strategy = strategy;
     }
     public void setStrategy(ExerciseIntensitySetter strategy){
         this.strategy=strategy;
     }
+
     public void configureIntensity(){
         this.n_sets=strategy.setNSets();
         this.n_reps=strategy.setNReps();

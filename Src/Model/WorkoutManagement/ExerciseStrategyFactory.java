@@ -4,13 +4,14 @@ public class ExerciseStrategyFactory {
     public static ExerciseIntensitySetter createStrategy(String type) {
         switch (type.toLowerCase()) {
             case "strength":
-                return new StrengthExercise();
+                return new StrengthExerciseSetter();
             case "hypertrophy":
-                return new HypertrophyExercise();
+                return new HypertrophyExerciseSetter();
             case "endurance":
-                return new EnduranceExercise();
+                return new EnduranceExerciseSetter();
             default:
                 throw new IllegalArgumentException("Unknown strategy type: " + type);
         }
     }
 }
+

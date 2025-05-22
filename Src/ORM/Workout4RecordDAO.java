@@ -106,16 +106,35 @@ public class Workout4RecordDAO {
 
     // ADD EXERCISES: Insert into the relationship table
     public void addExerciseToWorkout4Record(int w4rId, int exId) {
-        String sql = "INSERT INTO Workout4Record_Exercises (w4r_id, ex_id) VALUES (?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, w4rId);
-            stmt.setInt(2, exId);
-            stmt.executeUpdate();
-            System.out.println("Exercise added to Workout4Record!");
+        // First, check if the (w4r_id, ex_id) pair already exists
+        String checkSql = "SELECT COUNT(*) FROM Workout4Record_Exercises WHERE w4r_id = ? AND ex_id = ?";
+        try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
+            checkStmt.setInt(1, w4rId);
+            checkStmt.setInt(2, exId);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    // If the pair already exists, print a message and return
+                    System.out.println("Exercise (ex_id=" + exId + ") is already linked to Workout4Record (w4r_id=" + w4rId + "). Skipping insertion.");
+                    return;
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
+            return; // Exit if an error occurs
+        }
+
+        // If the pair does not exist, proceed with insertion
+        String insertSql = "INSERT INTO Workout4Record_Exercises (w4r_id, ex_id) VALUES (?, ?)";
+        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+            insertStmt.setInt(1, w4rId);
+            insertStmt.setInt(2, exId);
+            insertStmt.executeUpdate();
+            System.out.println("Exercise (ex_id=" + exId + ") added to Workout4Record (w4r_id=" + w4rId + ") successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace(); // Handle SQL errors gracefully
         }
     }
+
 
     // GET EXERCISES for a Workout4Record (returns Exercise objects)
     public List<Exercise> getExercisesForWorkout4Record(int w4rId) {

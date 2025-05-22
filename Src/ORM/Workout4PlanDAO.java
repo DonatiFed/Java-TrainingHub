@@ -115,16 +115,35 @@ public class Workout4PlanDAO {
 
     // ADD EXERCISES: Insert into the relationship table
     public void addExerciseToWorkout4Plan(int w4pId, int exId) {
-        String sql = "INSERT INTO Workout4Plan_Exercises (w4p_id, ex_id) VALUES (?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, w4pId);
-            stmt.setInt(2, exId);
-            stmt.executeUpdate();
-            System.out.println("Exercise added to Workout4Plan!");
+        // First, check if the (w4p_id, ex_id) pair already exists
+        String checkSql = "SELECT COUNT(*) FROM Workout4Plan_Exercises WHERE w4p_id = ? AND ex_id = ?";
+        try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
+            checkStmt.setInt(1, w4pId);
+            checkStmt.setInt(2, exId);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    // If the pair already exists, print a message and return
+                    System.out.println("Exercise (ex_id=" + exId + ") is already linked to Workout4Plan (w4p_id=" + w4pId + "). Skipping insertion.");
+                    return;
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
+            return; // Exit if an error occurs
+        }
+
+        // If the pair does not exist, proceed with insertion
+        String insertSql = "INSERT INTO Workout4Plan_Exercises (w4p_id, ex_id) VALUES (?, ?)";
+        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+            insertStmt.setInt(1, w4pId);
+            insertStmt.setInt(2, exId);
+            insertStmt.executeUpdate();
+            System.out.println("Exercise (ex_id=" + exId + ") added to Workout4Plan (w4p_id=" + w4pId + ") successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace(); // Handle SQL errors gracefully
         }
     }
+
 
     // GET EXERCISES for a Workout4Plan (returns Exercise objects)
     public List<Exercise> getExercisesForWorkout4Plan(int w4pId) {

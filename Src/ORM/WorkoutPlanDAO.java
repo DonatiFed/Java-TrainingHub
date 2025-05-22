@@ -50,7 +50,7 @@ public class WorkoutPlanDAO {
                 int id = rs.getInt("wp_id");
                 java.sql.Date lastEditDate = rs.getDate("last_edit_date");
 
-                WorkoutPlan plan = new WorkoutPlan( id); // No observer at this stage
+                WorkoutPlan plan = new WorkoutPlan(id); // No observer at this stage
                 String lastEditDateStr = (lastEditDate != null) ? lastEditDate.toString() : null;
                 plan.setLastEditDate(lastEditDateStr);
 
@@ -116,7 +116,7 @@ public class WorkoutPlanDAO {
                     String dayOfWeek = rs.getString("day");
                     String strategy = rs.getString("strategy");
 
-                    Workout4Plan workout4Plan = new Workout4Plan(dayOfWeek, strategy,id );
+                    Workout4Plan workout4Plan = new Workout4Plan(dayOfWeek, strategy, id);
                     workout4Plans.add(workout4Plan);
                 }
             }
@@ -128,16 +128,62 @@ public class WorkoutPlanDAO {
 
     // ADD Workout4Plans to WorkoutPlan (Insert into relationship table)
     public void addWorkout4PlanToWorkoutPlan(int wpId, int w4pId) {
-        String sql = "INSERT INTO WorkoutPlans_Workout4Plans (wp_id, w4p_id) VALUES (?, ?)";
+        // Check if wpId exists in WorkoutPlans
+        if (!doesIdExist("WorkoutPlans", "wp_id", wpId)) {
+            System.out.println("Error: WorkoutPlan (wp_id=" + wpId + ") does not exist. Aborting insertion.");
+            return;
+        }
+
+        // Check if w4pId exists in Workout4Plans
+        if (!doesIdExist("Workout4Plan", "w4p_id", w4pId)) {
+            System.out.println("Error: Workout4Plan (w4p_id=" + w4pId + ") does not exist. Aborting insertion.");
+            return;
+        }
+
+        // Check if the (wp_id, w4p_id) pair already exists
+        String checkSql = "SELECT COUNT(*) FROM WorkoutPlans_Workout4Plans WHERE wp_id = ? AND w4p_id = ?";
+        try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
+            checkStmt.setInt(1, wpId);
+            checkStmt.setInt(2, w4pId);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    System.out.println("Workout4Plan (w4p_id=" + w4pId + ") is already linked to WorkoutPlan (wp_id=" + wpId + "). Skipping insertion.");
+                    return;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return; // Exit if an error occurs
+        }
+
+        // If the pair does not exist, proceed with insertion
+        String insertSql = "INSERT INTO WorkoutPlans_Workout4Plans (wp_id, w4p_id) VALUES (?, ?)";
+        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+            insertStmt.setInt(1, wpId);
+            insertStmt.setInt(2, w4pId);
+            insertStmt.executeUpdate();
+            System.out.println("Workout4Plan (w4p_id=" + w4pId + ") linked to WorkoutPlan (wp_id=" + wpId + ") successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace(); // Handle SQL errors gracefully
+        }
+    }
+
+    /**
+     * Helper method to check if a specific ID exists in a given table.
+     */
+    private boolean doesIdExist(String tableName, String columnName, int id) {
+        String sql = "SELECT COUNT(*) FROM " + tableName + " WHERE " + columnName + " = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, wpId);
-            stmt.setInt(2, w4pId);
-            stmt.executeUpdate();
-            System.out.println("Workout4Plan linked to WorkoutPlan!");
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return true; // ID exists
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return false; // ID does not exist
     }
+
 }
-
-

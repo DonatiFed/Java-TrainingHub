@@ -50,7 +50,7 @@ public class WorkoutRecordDAO {
                 String lastEditDate = rs.getDate("last_edit_date").toString(); // Convert SQL Date to String
                 int nWorkouts = rs.getInt("N_workouts");
 
-                WorkoutRecord record = new WorkoutRecord( id); // No user reference at this stage
+                WorkoutRecord record = new WorkoutRecord(id); // No user reference at this stage
                 record.setLastEditDate(lastEditDate);
                 record.setnWorkouts(nWorkouts);
 
@@ -75,7 +75,7 @@ public class WorkoutRecordDAO {
                     String lastEditDate = rs.getDate("last_edit_date").toString();
                     int nWorkouts = rs.getInt("N_workouts");
 
-                    WorkoutRecord record = new WorkoutRecord( wrId);
+                    WorkoutRecord record = new WorkoutRecord(wrId);
                     record.setLastEditDate(lastEditDate);
                     record.setnWorkouts(nWorkouts);
 
@@ -117,7 +117,7 @@ public class WorkoutRecordDAO {
                     int id = rs.getInt("w4r_id");
                     String date = rs.getString("date");
 
-                    Workout4Record workout4Record = new Workout4Record(date,id);
+                    Workout4Record workout4Record = new Workout4Record(date, id);
                     workout4Records.add(workout4Record);
                 }
             }
@@ -129,16 +129,33 @@ public class WorkoutRecordDAO {
 
     // ADD Workout4Record to WorkoutRecord (Insert into relationship table)
     public void addWorkout4RecordToWorkoutRecord(int wrId, int w4rId) {
-        String sql = "INSERT INTO Workout4Record_WorkoutRecords (w4r_id, wr_id) VALUES (?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, w4rId);
-            stmt.setInt(2, wrId);
-            stmt.executeUpdate();
-            System.out.println("Workout4Record linked to WorkoutRecord!");
+        // First, check if the (w4r_id, wr_id) pair already exists
+        String checkSql = "SELECT COUNT(*) FROM Workout4Record_WorkoutRecords WHERE w4r_id = ? AND wr_id = ?";
+        try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
+            checkStmt.setInt(1, w4rId);
+            checkStmt.setInt(2, wrId);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    // If the pair already exists, print a message and return
+                    System.out.println("Workout4Record (w4r_id=" + w4rId + ") is already linked to WorkoutRecord (wr_id=" + wrId + "). Skipping insertion.");
+                    return;
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
+            return; // Exit if an error occurs
+        }
+
+        // If the pair does not exist, proceed with insertion
+        String insertSql = "INSERT INTO Workout4Record_WorkoutRecords (w4r_id, wr_id) VALUES (?, ?)";
+        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+            insertStmt.setInt(1, w4rId);
+            insertStmt.setInt(2, wrId);
+            insertStmt.executeUpdate();
+            System.out.println("Workout4Record (w4r_id=" + w4rId + ") linked to WorkoutRecord (wr_id=" + wrId + ") successfully!");
+        } catch (SQLException e) {
+            e.printStackTrace(); // Handle SQL errors gracefully
         }
     }
 }
-
 

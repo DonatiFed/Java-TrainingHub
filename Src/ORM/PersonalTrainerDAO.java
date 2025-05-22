@@ -65,14 +65,18 @@ public class PersonalTrainerDAO {
         String sql = "SELECT a.user_id, a.user_name, a.user_age FROM AppUser a JOIN Personal_Trainer pt ON a.user_id = pt.pt_id";
 
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            int rowCount = 0;
             while (rs.next()) {
+                rowCount++;
+                System.out.println("DEBUG DAO: ResultSet row #" + rowCount);
+
                 int id = rs.getInt("user_id");
                 String name = rs.getString("user_name");
                 int age = rs.getInt("user_age");
 
                 PersonalTrainer trainer = new PersonalTrainer(id, name, age);
-                trainer.setFollowedusers(getUsersOfPT(id));  // Attach trainees
-                trainer.setWorkoutPlans(getPlansMadeByPT(id)); // Attach workout plans
+                trainer.setFollowedusers(getUsersOfPT(id));  // Safe stubbed method
+                trainer.setWorkoutPlans(getPlansMadeByPT(id)); // Safe stubbed method
 
                 trainers.add(trainer);
             }
@@ -90,8 +94,8 @@ public class PersonalTrainerDAO {
             stmt.setInt(1, ptId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    String name = rs.getString("name");
-                    int age = rs.getInt("age");
+                    String name = rs.getString("user_name");
+                    int age = rs.getInt("user_age");
 
                     PersonalTrainer trainer = new PersonalTrainer(ptId, name, age);
                     trainer.setFollowedusers(getUsersOfPT(ptId));

@@ -15,8 +15,36 @@ public class ExerciseDAO {
         this.connection = DatabaseManager.getConnection();
     }
 
-    //  CREATE: Insert new exercise
-    public Exercise addExercise(String name, String description, String equipment, int sets, int reps, int weight, String strategyType) {
+    // New constructor for testing
+    public ExerciseDAO(Connection connection) {
+        this.connection = connection;
+    }
+
+
+public Exercise addExercise(String name, String description, String equipment, int sets, int reps, int weight, String strategyType) throws SQLException{
+        // Validate inputs before attempting to insert
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Exercise name cannot be empty.");
+        }
+        if (description == null || description.isEmpty()) {
+            throw new IllegalArgumentException("Exercise description cannot be empty.");
+        }
+        if (sets <= 0) {
+            throw new IllegalArgumentException("Number of sets must be greater than 0.");
+        }
+        if (reps <= 0) {
+            throw new IllegalArgumentException("Number of reps must be greater than 0.");
+        }
+        if (weight < 0)  {
+            throw new IllegalArgumentException("Weight must be greater or equal than 0");
+        }
+        if (strategyType == null || strategyType.isEmpty()) {
+            throw new IllegalArgumentException("Strategy type cannot be empty.");
+        }
+
+        // Adjust the sequence before inserting
+        adjustSequence();
+
         String sql = "INSERT INTO Exercises (exercise_name, exercise_description, exercise_equipment, exercise_N_sets, exercise_N_reps, exercise_weight, exercise_strategy) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -29,6 +57,8 @@ public class ExerciseDAO {
             stmt.setString(7, strategyType);
 
             int affectedRows = stmt.executeUpdate();
+            System.out.println("affectedRows in addExercise: " + affectedRows); // Debugging line
+
 
             if (affectedRows == 0) {
                 throw new SQLException("Exercise insertion failed, no rows affected.");
@@ -40,18 +70,105 @@ public class ExerciseDAO {
                     int generatedId = rs.getInt(1);
                     ExerciseIntensitySetter strategy = ExerciseStrategyFactory.createStrategy(strategyType);
 
-
-                    //  Return Exercise object with correct ID
+                    // Return Exercise object with correct ID
                     return new Exercise(generatedId, name, description, equipment, sets, reps, weight, strategy);
                 } else {
                     throw new SQLException("Failed to retrieve ID after inserting Exercise.");
                 }
             }
+        }
+    }
+
+
+    public Exercise addExercise4plan(String name, String description, String equipment, String strategyType) throws SQLException {
+        // Validate inputs
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Exercise name cannot be empty.");
+        }
+        if (description == null || description.isEmpty()) {
+            throw new IllegalArgumentException("Exercise description cannot be empty.");
+        }
+        if (strategyType == null || strategyType.isEmpty()) {
+            throw new IllegalArgumentException("Strategy type cannot be empty.");
+        }
+
+        ExerciseIntensitySetter strategy = ExerciseStrategyFactory.createStrategy(strategyType);
+
+        // Step 1: Check for existing exercise with same name, strategy, and NULL weight
+        String checkSql = "SELECT * FROM Exercises WHERE exercise_name = ? AND exercise_strategy = ? AND exercise_weight IS NULL";
+        try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
+            checkStmt.setString(1, name);
+            checkStmt.setString(2, strategyType);
+
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) {
+                    // Already exists — just return it
+                    int existingId = rs.getInt("exercise_id");
+                    String existingDescription = rs.getString("exercise_description");
+                    String existingEquipment = rs.getString("exercise_equipment");
+
+                    System.out.println("Exercise already exists for plan: " + name + ", strategy: " + strategyType);
+                    return new Exercise(existingId, name, existingDescription, existingEquipment, strategy);
+                }
+            }
+        }
+
+        // Step 2: Adjust the sequence before inserting new one
+        adjustSequence();
+
+        // Step 3: Proceed with insertion
+        String insertSql = "INSERT INTO Exercises (exercise_name, exercise_description, exercise_equipment, exercise_N_sets, exercise_N_reps, exercise_weight, exercise_strategy) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement stmt = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, name);
+            stmt.setString(2, description);
+            stmt.setString(3, equipment);
+            stmt.setInt(4, strategy.setNSets());
+            stmt.setInt(5, strategy.setNReps());
+            stmt.setNull(6, java.sql.Types.INTEGER); // NULL weight = it's for plan
+            stmt.setString(7, strategyType);
+
+            int affectedRows = stmt.executeUpdate();
+            System.out.println("affectedRows in addExercise: " + affectedRows);
+
+            if (affectedRows == 0) {
+                throw new SQLException("Exercise insertion failed, no rows affected.");
+            }
+
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int generatedId = rs.getInt(1);
+                    return new Exercise(generatedId, name, description, equipment, strategy);
+                } else {
+                    throw new SQLException("Failed to retrieve ID after inserting Exercise.");
+                }
+            }
+        }
+    }
+
+
+
+    // addexercise 4 plan, strategy setter prima della insert, controllo che esiste un esercizio con nome e strategy uguale, il pt basta che prenda quello per metterlo nel plan )
+    //( booleano per capire se l'es è del plan o per record )
+    // però no booleano per workout4record di 2 trainee che svolgono stesso es stesse rep pk dovrebbe esssere colonna in piu non boooleana  , ma con id trainee
+
+    private void adjustSequence() {
+        String sql = "SELECT MAX(ex_id) FROM exercises";
+
+        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                int maxId = rs.getInt(1);
+                if (maxId > 0) {
+                    String resetSeqSql = "SELECT setval('exercises_ex_id_seq', ?, false)";
+                    try (PreparedStatement resetStmt = connection.prepareStatement(resetSeqSql)) {
+                        resetStmt.setInt(1, maxId); // Set the sequence to the max ID in the table
+                        resetStmt.executeUpdate();
+                    }
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-        return null; // Return null if insertion fails
     }
 
 
