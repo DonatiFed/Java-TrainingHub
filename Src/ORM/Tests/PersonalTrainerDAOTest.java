@@ -16,7 +16,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
 
@@ -87,7 +86,7 @@ class PersonalTrainerDAOTest {
         when(mockConnection.prepareStatement(eq(sqlTrainer))).thenReturn(mockTrainerStmt);
         when(mockConnection.prepareStatement(eq(sqlLinkWorkoutRecord))).thenReturn(mockLinkStmt);
 
-        PersonalTrainer result = null;
+        PersonalTrainer result;
 
         try (MockedConstruction<WorkoutRecordDAO> mockedConstruction =
                      Mockito.mockConstruction(WorkoutRecordDAO.class,
@@ -263,8 +262,8 @@ class PersonalTrainerDAOTest {
         String sql = "SELECT u.user_id, u.user_name, u.user_age, u.is_pt FROM AppUser u JOIN WorkoutPlans_PersonalTrainer_AppUser wpt ON u.user_id = wpt.trainee_id WHERE wpt.pt_id = ?";
         when(mockResultSet.next()).thenReturn(true, true, false);
         when(mockResultSet.getInt("user_id")).thenReturn(1, 4);
-        when(mockResultSet.getString("name")).thenReturn("John Doe", "Peter Pan");
-        when(mockResultSet.getInt("age")).thenReturn(30, 28);
+        when(mockResultSet.getString("user_name")).thenReturn("John Doe", "Peter Pan");
+        when(mockResultSet.getInt("user_age")).thenReturn(30, 28);
         when(mockResultSet.getBoolean("is_pt")).thenReturn(false, true);
         when(mockConnection.prepareStatement(eq(sql))).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
@@ -273,11 +272,11 @@ class PersonalTrainerDAOTest {
 
         assertNotNull(users);
         assertEquals(2, users.size());
-        assertTrue(users.get(0) instanceof Trainee);
+        assertInstanceOf(Trainee.class, users.get(0));
         assertEquals(1, users.get(0).getId());
         assertEquals("John Doe", users.get(0).getName());
         assertEquals(30, users.get(0).getAge());
-        assertTrue(users.get(1) instanceof PersonalTrainer);
+        assertInstanceOf(PersonalTrainer.class, users.get(1));
         assertEquals(4, users.get(1).getId());
         assertEquals("Peter Pan", users.get(1).getName());
         assertEquals(28, users.get(1).getAge());
@@ -286,8 +285,8 @@ class PersonalTrainerDAOTest {
         verify(mockPreparedStatement).executeQuery();
         verify(mockResultSet, times(3)).next();
         verify(mockResultSet, times(2)).getInt("user_id");
-        verify(mockResultSet, times(2)).getString("name");
-        verify(mockResultSet, times(2)).getInt("age");
+        verify(mockResultSet, times(2)).getString("user_name");
+        verify(mockResultSet, times(2)).getInt("user_age");
         verify(mockResultSet, times(2)).getBoolean("is_pt");
     }
 

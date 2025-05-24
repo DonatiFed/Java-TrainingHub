@@ -147,8 +147,8 @@ public class PersonalTrainerDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     int id = rs.getInt("user_id");
-                    String name = rs.getString("name");
-                    int age = rs.getInt("age");
+                    String name = rs.getString("user_name");
+                    int age = rs.getInt("user_age");
                     boolean isPT = rs.getBoolean("is_pt");
 
                     if (isPT) {
