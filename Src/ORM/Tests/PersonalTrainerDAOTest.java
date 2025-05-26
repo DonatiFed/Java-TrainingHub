@@ -2,16 +2,13 @@ package ORM.Tests;
 
 import ORM.DatabaseManager;
 import ORM.PersonalTrainerDAO;
-import ORM.WorkoutRecordDAO;
 import Model.UserManagement.PersonalTrainer;
 import Model.UserManagement.Trainee;
 import Model.UserManagement.User;
 import Model.WorkoutManagement.WorkoutPlan;
-import Model.WorkoutManagement.WorkoutRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -64,60 +61,50 @@ class PersonalTrainerDAOTest {
         String name = "Jane Doe";
         int age = 35;
         int generatedId = 3;
-        int workoutRecordId = 2;
 
-        String sqlUser = "INSERT INTO AppUser (user_name, user_age, is_pt) VALUES (?, ?, true) RETURNING user_id";
+        String sqlUser = "INSERT INTO AppUser (user_name, user_age, is_pt) VALUES (?, ?, true)";
         String sqlTrainer = "INSERT INTO Personal_Trainer (pt_id) VALUES (?)";
-        String sqlLinkWorkoutRecord = "INSERT INTO WorkoutRecords_AppUser (user_id, wr_id) VALUES (?, ?)";
 
-        // Create separate mocks for each PreparedStatement
+        // Mock PreparedStatements
         PreparedStatement mockUserStmt = mock(PreparedStatement.class);
         PreparedStatement mockTrainerStmt = mock(PreparedStatement.class);
-        PreparedStatement mockLinkStmt = mock(PreparedStatement.class);
 
-        // Mock ResultSet for user ID
-        ResultSet mockGeneratedKeysRs = mock(ResultSet.class);
-        when(mockUserStmt.executeQuery()).thenReturn(mockGeneratedKeysRs);
-        when(mockGeneratedKeysRs.next()).thenReturn(true);
-        when(mockGeneratedKeysRs.getInt("user_id")).thenReturn(generatedId);
+        // Mock ResultSet for generated keys
+        ResultSet mockGeneratedKeys = mock(ResultSet.class);
 
-        // Mock Connection prepareStatements for each SQL
-        when(mockConnection.prepareStatement(eq(sqlUser))).thenReturn(mockUserStmt);
+        // Mock behaviors
+        when(mockConnection.prepareStatement(eq(sqlUser), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(mockUserStmt);
         when(mockConnection.prepareStatement(eq(sqlTrainer))).thenReturn(mockTrainerStmt);
-        when(mockConnection.prepareStatement(eq(sqlLinkWorkoutRecord))).thenReturn(mockLinkStmt);
 
-        PersonalTrainer result;
+        when(mockUserStmt.executeUpdate()).thenReturn(1);
+        when(mockUserStmt.getGeneratedKeys()).thenReturn(mockGeneratedKeys);
 
-        try (MockedConstruction<WorkoutRecordDAO> mockedConstruction =
-                     Mockito.mockConstruction(WorkoutRecordDAO.class,
-                             (mock, context) -> when(mock.addWorkoutRecord())
-                                     .thenReturn(new WorkoutRecord(workoutRecordId)))) {
+        when(mockGeneratedKeys.next()).thenReturn(true);
+        when(mockGeneratedKeys.getInt(1)).thenReturn(generatedId);
 
-            result = personalTrainerDAO.addPersonalTrainer(name, age);
+        // Call method
+        personalTrainerDAO = new PersonalTrainerDAO(mockConnection);
+        PersonalTrainer result = personalTrainerDAO.addPersonalTrainer(name, age);
 
-            // Verify user insert
-            verify(mockConnection).prepareStatement(eq(sqlUser));
-            verify(mockUserStmt).setString(1, name);
-            verify(mockUserStmt).setInt(2, age);
-            verify(mockUserStmt).executeQuery();
+        // Verify user insert
+        verify(mockConnection).prepareStatement(eq(sqlUser), eq(Statement.RETURN_GENERATED_KEYS));
+        verify(mockUserStmt).setString(1, name);
+        verify(mockUserStmt).setInt(2, age);
+        verify(mockUserStmt).executeUpdate();
+        verify(mockUserStmt).getGeneratedKeys();
 
-            // Verify trainer insert
-            verify(mockConnection).prepareStatement(eq(sqlTrainer));
-            verify(mockTrainerStmt).setInt(1, generatedId);
-            verify(mockTrainerStmt).executeUpdate();
+        // Verify trainer insert
+        verify(mockConnection).prepareStatement(eq(sqlTrainer));
+        verify(mockTrainerStmt).setInt(1, generatedId);
+        verify(mockTrainerStmt).executeUpdate();
 
-            // Verify workout record link insert
-            verify(mockConnection).prepareStatement(eq(sqlLinkWorkoutRecord));
-            verify(mockLinkStmt).setInt(1, generatedId);
-            verify(mockLinkStmt).setInt(2, workoutRecordId);
-            verify(mockLinkStmt).executeUpdate();
-        }
-
+        // Assert returned trainer
         assertNotNull(result);
         assertEquals(generatedId, result.getId());
         assertEquals(name, result.getName());
         assertEquals(age, result.getAge());
     }
+
 
     @Test
     void testGetAllPersonalTrainers() throws SQLException {
@@ -137,7 +124,7 @@ class PersonalTrainerDAOTest {
         PersonalTrainerDAO spyDAO = Mockito.spy(personalTrainerDAO);
 
         // Stub the internal methods to return empty lists (safe stubs)
-        doReturn(Collections.emptyList()).when(spyDAO).getUsersOfPT(anyInt());
+        doReturn(Collections.emptyList()).when(spyDAO).getTraineesOfPT(anyInt());
         doReturn(Collections.emptyList()).when(spyDAO).getPlansMadeByPT(anyInt());
 
         // Run method under test with spy
@@ -186,7 +173,7 @@ class PersonalTrainerDAOTest {
         // To avoid infinite loops in getUsersOfPT and getPlansMadeByPT (if they do DB calls),
         // either mock them or stub with empty lists. For now, stub with empty lists.
         PersonalTrainerDAO spyDao = Mockito.spy(personalTrainerDAO);
-        doReturn(Collections.emptyList()).when(spyDao).getUsersOfPT(ptId);
+        doReturn(Collections.emptyList()).when(spyDao).getTraineesOfPT(ptId);
         doReturn(Collections.emptyList()).when(spyDao).getPlansMadeByPT(ptId);
 
         // Run the method under test on the spy
@@ -207,7 +194,7 @@ class PersonalTrainerDAOTest {
         verify(mockResultSet).getInt("user_age");
 
         // Verify internal DAO calls to getUsersOfPT and getPlansMadeByPT
-        verify(spyDao).getUsersOfPT(ptId);
+        verify(spyDao).getTraineesOfPT(ptId);
         verify(spyDao).getPlansMadeByPT(ptId);
     }
 
@@ -257,7 +244,7 @@ class PersonalTrainerDAOTest {
     }
 
     @Test
-    void testGetUsersOfPT() throws SQLException {
+    void testGetTraineesOfPT() throws SQLException {
         int ptId = 3;
         String sql = "SELECT u.user_id, u.user_name, u.user_age, u.is_pt FROM AppUser u JOIN WorkoutPlans_PersonalTrainer_AppUser wpt ON u.user_id = wpt.trainee_id WHERE wpt.pt_id = ?";
         when(mockResultSet.next()).thenReturn(true, true, false);
@@ -268,7 +255,7 @@ class PersonalTrainerDAOTest {
         when(mockConnection.prepareStatement(eq(sql))).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
 
-        List<User> users = personalTrainerDAO.getUsersOfPT(ptId);
+        List<User> users = personalTrainerDAO.getTraineesOfPT(ptId);
 
         assertNotNull(users);
         assertEquals(2, users.size());

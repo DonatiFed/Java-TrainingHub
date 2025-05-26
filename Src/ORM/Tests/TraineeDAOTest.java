@@ -61,85 +61,47 @@ class TraineeDAOTest {
 
     @Test
     void testAddTrainee() throws SQLException {
-        System.out.println("--- Starting testAddTrainee ---");
-        String name = "John Doe";
-        int age = 30;
-        int generatedId = 1;
-        int workoutRecordId = 1; // ID returned by the mocked WorkoutRecordDAO
+        String name = "John Smith";
+        int age = 28;
+        int generatedId = 42;
 
-        // --- Specific Mocks for this Test ---
-        PreparedStatement mockAddUserStmt = mock(PreparedStatement.class);
-        PreparedStatement mockLinkStmt = mock(PreparedStatement.class);
-        ResultSet mockGeneratedKeysRs = mock(ResultSet.class); // Separate mock for generated keys
-
-        // Define expected SQL strings
         String sqlUser = "INSERT INTO AppUser (user_name, user_age, is_pt) VALUES (?, ?, false)";
-        String sqlLink = "INSERT INTO WorkoutRecords_AppUser (user_id, wr_id) VALUES (?, ?)";
 
-        // --- Configure Mocking Behavior ---
-        // 1. Mock connection.prepareStatement to return specific mocks for specific SQL
-        when(mockConnection.prepareStatement(eq(sqlUser), eq(Statement.RETURN_GENERATED_KEYS)))
-                .thenReturn(mockAddUserStmt);
-        when(mockConnection.prepareStatement(eq(sqlLink)))
-                .thenReturn(mockLinkStmt);
+        // Mock PreparedStatement and ResultSet
+        PreparedStatement mockStmt = mock(PreparedStatement.class);
+        ResultSet mockRs = mock(ResultSet.class);
 
-        // 2. Mock execution of the first statement (add user)
-        when(mockAddUserStmt.executeUpdate()).thenReturn(1); // Rows affected
-        when(mockAddUserStmt.getGeneratedKeys()).thenReturn(mockGeneratedKeysRs);
+        // Mock behavior of executeUpdate and getGeneratedKeys
+        when(mockStmt.executeUpdate()).thenReturn(1);
+        when(mockStmt.getGeneratedKeys()).thenReturn(mockRs);
 
-        // 3. Mock the generated keys result set
-        when(mockGeneratedKeysRs.next()).thenReturn(true);
-        when(mockGeneratedKeysRs.getInt(1)).thenReturn(generatedId);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getInt(1)).thenReturn(generatedId);
 
-        // 4. Mock the second statement execution (link user/workout)
-        when(mockLinkStmt.executeUpdate()).thenReturn(1); // Rows affected
+        // Mock connection to return mocked PreparedStatement
+        when(mockConnection.prepareStatement(eq(sqlUser), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(mockStmt);
 
-        // Use MockedConstruction for the WorkoutRecordDAO dependency
-        Trainee result = null;
-        try (MockedConstruction<WorkoutRecordDAO> mockedConstruction = Mockito.mockConstruction(WorkoutRecordDAO.class,
-                (mock, context) -> {
-                    // Configure the mock WorkoutRecordDAO created inside TraineeDAO
-                    when(mock.addWorkoutRecord()).thenReturn(new WorkoutRecord(workoutRecordId));
-                })) {
+        // Instantiate DAO with mocked connection
+        TraineeDAO traineeDAO = new TraineeDAO(mockConnection);
 
-            // --- Execute the Method Under Test ---
-            result = traineeDAO.addTrainee(name, age);
+        // Call the method under test
+        Trainee result = traineeDAO.addTrainee(name, age);
 
-            // Verify that one WorkoutRecordDAO was constructed
-            assertEquals(1, mockedConstruction.constructed().size());
-            WorkoutRecordDAO constructedDaoMock = mockedConstruction.constructed().get(0);
-            verify(constructedDaoMock).addWorkoutRecord(); // Verify the method call on the constructed mock
-        }
+        // Verify interactions with the mocks
+        verify(mockConnection).prepareStatement(eq(sqlUser), eq(Statement.RETURN_GENERATED_KEYS));
+        verify(mockStmt).setString(1, name);
+        verify(mockStmt).setInt(2, age);
+        verify(mockStmt).executeUpdate();
+        verify(mockStmt).getGeneratedKeys();
+        verify(mockRs).next();
 
-        // --- Assertions ---
-        assertNotNull(result, "Trainee should not be null");
+        // Assert returned Trainee object correctness
+        assertNotNull(result);
         assertEquals(generatedId, result.getId());
         assertEquals(name, result.getName());
         assertEquals(age, result.getAge());
-
-        // --- Verifications ---
-        // Verify interactions with the first statement (add user)
-        verify(mockConnection).prepareStatement(eq(sqlUser), eq(Statement.RETURN_GENERATED_KEYS));
-        verify(mockAddUserStmt).setString(1, name);
-        verify(mockAddUserStmt).setInt(2, age);
-        verify(mockAddUserStmt).executeUpdate(); // Called once
-        verify(mockAddUserStmt).getGeneratedKeys();
-        verify(mockGeneratedKeysRs).next();
-        verify(mockGeneratedKeysRs).getInt(1);
-
-        // Verify interactions with the second statement (link user/workout)
-        verify(mockConnection).prepareStatement(eq(sqlLink));
-        verify(mockLinkStmt).setInt(1, generatedId); // Should use the generated ID
-        verify(mockLinkStmt).setInt(2, workoutRecordId); // Should use the ID from mocked DAO
-        verify(mockLinkStmt).executeUpdate(); // Called once
-
-        // Ensure no *unexpected* interactions on *these specific* mocks were missed by above verifies
-        // Note: verifyNoMoreInteractions can be strict due to implicit close() in try-with-resources,
-        // so it's often omitted if explicit verifies cover the main logic.
-        // verifyNoMoreInteractions(mockAddUserStmt, mockLinkStmt, mockGeneratedKeysRs); // Optional/potentially problematic
-
-        System.out.println("--- Finished testAddTrainee ---");
     }
+
 
     @Test
     void testGetAllTrainees() throws SQLException {
@@ -356,5 +318,78 @@ class TraineeDAOTest {
         verify(mockGetPtStmt).executeQuery();
         verify(mockResultSet).next(); // Called once, returned false
         System.out.println("--- Finished testGetPTForUserId_NotFound ---");
+    }
+
+    @Test
+    void testGetWorkoutRecordByUserId() throws SQLException {
+        System.out.println("--- Starting testGetWorkoutRecordByUserId ---");
+        int userId = 1;
+        int expectedWorkoutRecordId = 5;
+        Date expectedCreationDate = Date.valueOf("2025-05-25");
+
+        // Specific mock for this test
+        PreparedStatement mockGetRecordStmt = mock(PreparedStatement.class);
+        String sql = "SELECT wr.wr_id, wr.last_edit_date " +
+                "FROM WorkoutRecords wr " +
+                "JOIN WorkoutRecords_AppUser wra ON wr.wr_id = wra.wr_id " +
+                "WHERE wra.user_id = ?";
+
+        // Configure Mocks
+        when(mockConnection.prepareStatement(eq(sql))).thenReturn(mockGetRecordStmt);
+        when(mockGetRecordStmt.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(true);
+        when(mockResultSet.getInt("wr_id")).thenReturn(expectedWorkoutRecordId);
+        when(mockResultSet.getDate("last_edit_date")).thenReturn(expectedCreationDate);
+
+        // Execute
+        WorkoutRecord workoutRecord = traineeDAO.getWorkoutRecordByUserId(userId);
+
+        // Assertions
+        assertNotNull(workoutRecord);
+        assertEquals(expectedWorkoutRecordId, workoutRecord.getId());
+        // We are not currently using the creationDate in the WorkoutRecord constructor
+        // If you do in the future, you'd want to assert it here.
+
+        // Verifications
+        verify(mockConnection).prepareStatement(eq(sql));
+        verify(mockGetRecordStmt).setInt(1, userId);
+        verify(mockGetRecordStmt).executeQuery();
+        verify(mockResultSet).next();
+        verify(mockResultSet).getInt("wr_id");
+        verify(mockResultSet).getDate("last_edit_date");
+
+        System.out.println("--- Finished testGetWorkoutRecordByUserId ---");
+    }
+
+    @Test
+    void testGetWorkoutRecordByUserId_NotFound() throws SQLException {
+        System.out.println("--- Starting testGetWorkoutRecordByUserId_NotFound ---");
+        int userId = 99; // An ID that should not have a workout record
+
+        // Specific mock for this test
+        PreparedStatement mockGetRecordStmt = mock(PreparedStatement.class);
+        String sql = "SELECT wr.wr_id, wr.last_edit_date " +
+                "FROM WorkoutRecords wr " +
+                "JOIN WorkoutRecords_AppUser wra ON wr.wr_id = wra.wr_id " +
+                "WHERE wra.user_id = ?";
+
+        // Configure Mocks
+        when(mockConnection.prepareStatement(eq(sql))).thenReturn(mockGetRecordStmt);
+        when(mockGetRecordStmt.executeQuery()).thenReturn(mockResultSet); // Using the class-level mockResultSet
+        when(mockResultSet.next()).thenReturn(false); // Setting behavior on the class-level mockResultSet
+
+        // Execute
+        WorkoutRecord workoutRecord = traineeDAO.getWorkoutRecordByUserId(userId);
+
+        // Assertions
+        assertNull(workoutRecord);
+
+        // Verifications
+        verify(mockConnection).prepareStatement(eq(sql));
+        verify(mockGetRecordStmt).setInt(1, userId);
+        verify(mockGetRecordStmt).executeQuery();
+        verify(mockResultSet).next();
+
+        System.out.println("--- Finished testGetWorkoutRecordByUserId_NotFound ---");
     }
 }

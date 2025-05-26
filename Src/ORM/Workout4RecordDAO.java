@@ -9,13 +9,17 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-//Todo: date is dateType in the db, but a string for the Workout4Record Class
 public class Workout4RecordDAO {
     private final Connection connection;
 
-    public Workout4RecordDAO() {
-        this.connection = DatabaseManager.getConnection();
+    public Workout4RecordDAO(Connection connection) {
+        this.connection = connection;
     }
+
+    public Workout4RecordDAO() {
+        this(DatabaseManager.getConnection());
+    }
+
 
     // CREATE: Add a Workout4Record
     public Workout4Record addWorkout4Record(String date) {

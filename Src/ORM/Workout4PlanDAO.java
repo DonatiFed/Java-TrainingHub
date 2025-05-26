@@ -9,13 +9,19 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: gestire workout4plan/workout4plans, in modo di avere un'unica istanza tra db e table correlate
+
 public class Workout4PlanDAO {
     private final Connection connection;
 
-    public Workout4PlanDAO() {
-        this.connection = DatabaseManager.getConnection();
+    public Workout4PlanDAO(Connection connection) {
+        this.connection=connection;
     }
+
+    public Workout4PlanDAO(){
+       this(DatabaseManager.getConnection());
+    }
+
+
 
     // CREATE: Add a Workout4Plan
     public Workout4Plan addWorkout4Plan(String dayOfWeek, String strategyType) {
@@ -55,7 +61,6 @@ public class Workout4PlanDAO {
                 int id = rs.getInt("w4p_id");
                 String dayOfWeek = rs.getString("day");
                 String strategy = rs.getString("strategy");
-                ExerciseIntensitySetter strategyObj = ExerciseStrategyFactory.createStrategy(strategy);
                 Workout4Plan workout = new Workout4Plan(dayOfWeek, strategy, id);
                 workout.setExercises(getExercisesForWorkout4Plan(id)); // Attach exercises
                 workoutPlans.add(workout);
@@ -75,7 +80,6 @@ public class Workout4PlanDAO {
                 if (rs.next()) {
                     String dayOfWeek = rs.getString("day");
                     String strategy = rs.getString("strategy");
-                    ExerciseIntensitySetter strategyObj = ExerciseStrategyFactory.createStrategy(strategy);
                     Workout4Plan workout = new Workout4Plan(dayOfWeek, strategy, id);
                     workout.setExercises(getExercisesForWorkout4Plan(id)); // Attach exercises
                     return workout;

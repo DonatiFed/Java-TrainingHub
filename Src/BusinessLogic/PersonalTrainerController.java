@@ -1,92 +1,96 @@
 package BusinessLogic;
 
 import Model.UserManagement.PersonalTrainer;
-import Model.UserManagement.Trainee;
 import Model.UserManagement.User;
 import Model.WorkoutManagement.WorkoutPlan;
+import Model.WorkoutManagement.WorkoutRecord;
 import ORM.PersonalTrainerDAO;
+import ORM.WorkoutPlanDAO;
+import ORM.WorkoutRecordDAO;
 
 import java.util.List;
 
 public class PersonalTrainerController {
     private final PersonalTrainerDAO ptDAO;
+    private final WorkoutPlanDAO wpDAO;
+    private final WorkoutRecordDAO wrDAO;
 
-    // Default constructor
-    public PersonalTrainerController() {
-        this.ptDAO = new PersonalTrainerDAO();
-    }
-
-    // Custom DAO constructor (for testing/injection)
-    public PersonalTrainerController(PersonalTrainerDAO ptDAO) {
+    // Constructor injection of DAOs — must be created elsewhere and passed in
+    public PersonalTrainerController(PersonalTrainerDAO ptDAO, WorkoutPlanDAO wpDAO, WorkoutRecordDAO wrDAO) {
         this.ptDAO = ptDAO;
+        this.wpDAO = wpDAO;
+        this.wrDAO = wrDAO;
     }
 
-    // Create a new Personal Trainer
+    // Register PT and create linked WorkoutRecord
     public PersonalTrainer registerPersonalTrainer(String name, int age) {
-        if (name == null || name.trim().isEmpty()) {
-            System.err.println("Name cannot be empty.");
-            return null;
-        }
-        if (age <= 0) {
-            System.err.println("Age must be positive.");
+        PersonalTrainer pt = ptDAO.addPersonalTrainer(name, age);
+        if (pt == null) {
+            System.out.println("❌ Failed to create Personal Trainer.");
             return null;
         }
 
-        return ptDAO.addPersonalTrainer(name, age);
+        var wr = wrDAO.addWorkoutRecord();
+        if (wr == null) {
+            System.out.println("❌ Failed to create WorkoutRecord.");
+            return pt; // Returning pt even if workout record creation fails
+        }
+
+        try {
+            wrDAO.linkWorkoutRecordToUser(pt.getId(), wr.getId());
+            System.out.println("✅ Created Personal Trainer (ID: " + pt.getId() + ") with linked WorkoutRecord (ID: " + wr.getId() + ")");
+        } catch (Exception e) {
+            System.out.println("❌ Failed to link WorkoutRecord to Personal Trainer.");
+            e.printStackTrace();
+        }
+        return pt;
     }
 
-    // Get all Personal Trainers
+    // Assign WorkoutPlan to Trainee by this PT
+    public void followTrainee(int ptId, int traineeId, int workoutPlanId) {
+        wpDAO.assignWorkoutPlanToUser(workoutPlanId, traineeId, ptId);
+        System.out.println("✅ Assigned WorkoutPlan " + workoutPlanId + " to Trainee " + traineeId + " by PT " + ptId);
+    }
+
+    public void assignWorkoutPlanToTrainee(int personalTrainerId, int traineeId, int workoutPlanId) {
+        // Call DAO method that links the plan to the trainee and PT
+        wpDAO.assignWorkoutPlanToUser(workoutPlanId, traineeId, personalTrainerId);
+    }
+
     public List<PersonalTrainer> getAllPersonalTrainers() {
         return ptDAO.getAllPersonalTrainers();
     }
 
-    // Get a specific Personal Trainer by ID
     public PersonalTrainer getPersonalTrainerById(int ptId) {
-        if (ptId <= 0) {
-            System.err.println("Invalid Personal Trainer ID.");
-            return null;
-        }
-
         return ptDAO.getPersonalTrainerById(ptId);
     }
 
-    // Get workout plans created by a specific PT
-    public List<WorkoutPlan> getWorkoutPlansByPT(int ptId) {
-        if (ptId <= 0) {
-            System.err.println("Invalid Personal Trainer ID.");
-            return null;
-        }
+    public void updatePersonalTrainer(int ptId, String newName, int newAge) {
+        ptDAO.editPersonalTrainer(ptId, newName, newAge);
+        System.out.println("✅ Updated Personal Trainer with ID: " + ptId);
+    }
 
+    public void deletePersonalTrainer(int ptId) {
+        ptDAO.deletePersonalTrainer(ptId);
+        System.out.println("✅ Deleted Personal Trainer with ID: " + ptId);
+    }
+
+    public List<User> getTraineesOfPT(int ptId) {
+        return ptDAO.getTraineesOfPT(ptId);
+    }
+
+    public List<WorkoutPlan> getPlansMadeByPT(int ptId) {
         return ptDAO.getPlansMadeByPT(ptId);
     }
 
-    // Get users trained by a PT
-    public List<User> getUsersTrainedByPT(int ptId) {
-        if (ptId <= 0) {
-            System.err.println("Invalid Personal Trainer ID.");
+    // New method: fetch workout record of a trainee only if the PT follows the trainee
+    public WorkoutRecord getWorkoutRecordForTrainee(int ptId, int traineeId) {
+        // Check if ptId follows traineeId (make sure you have this method in your DAO)
+        if (!ptDAO.isFollowing(ptId, traineeId)) {
+            System.err.println("Personal Trainer with ID " + ptId + " does not follow Trainee with ID " + traineeId);
             return null;
         }
-
-        return ptDAO.getUsersOfPT(ptId);
-    }
-
-    // Update Personal Trainer info
-    public void updatePersonalTrainer(int ptId, String newName, int newAge) {
-        if (ptId <= 0 || newName == null || newName.trim().isEmpty() || newAge <= 0) {
-            System.err.println("Invalid input for updating Personal Trainer.");
-            return;
-        }
-
-        ptDAO.editPersonalTrainer(ptId, newName, newAge);
-    }
-
-    // Delete Personal Trainer
-    public void deletePersonalTrainer(int ptId) {
-        if (ptId <= 0) {
-            System.err.println("Invalid Personal Trainer ID.");
-            return;
-        }
-
-        ptDAO.deletePersonalTrainer(ptId);
+        // Return the workout record linked to the trainee
+        return wrDAO.getWorkoutRecordByUserId(traineeId);
     }
 }

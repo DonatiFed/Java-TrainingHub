@@ -4,6 +4,7 @@ import Model.UserManagement.PersonalTrainer;
 import Model.UserManagement.Trainee;
 import Model.WorkoutManagement.WorkoutPlan;
 import Model.WorkoutManagement.WorkoutRecord;
+import org.postgresql.util.PSQLException;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -12,52 +13,40 @@ import java.util.List;
 public class TraineeDAO {
     private final Connection connection;
 
-    public TraineeDAO() {
-        this.connection = DatabaseManager.getConnection();
+    public TraineeDAO(Connection connection) {
+        this.connection = connection;
     }
 
-    //  CREATE: Add a new Trainee
+    public TraineeDAO() {
+        this(DatabaseManager.getConnection());
+    }
+
     public Trainee addTrainee(String name, int age) {
         String sqlUser = "INSERT INTO AppUser (user_name, user_age, is_pt) VALUES (?, ?, false)";
-        try (PreparedStatement stmtUser = connection.prepareStatement(sqlUser, Statement.RETURN_GENERATED_KEYS)) {
-            stmtUser.setString(1, name);
-            stmtUser.setInt(2, age);
-            stmtUser.executeUpdate();
 
-            // Get the generated user ID
-            try (ResultSet generatedKeys = stmtUser.getGeneratedKeys()) {
+        try (PreparedStatement stmt = connection.prepareStatement(sqlUser, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, name);
+            stmt.setInt(2, age);
+
+            int rowsInserted = stmt.executeUpdate();
+            if (rowsInserted == 0) {
+                System.out.println("No Trainee was added.");
+                return null;
+            }
+
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int userId = generatedKeys.getInt(1);
-                    Trainee trainee = new Trainee(userId, name, age);
-
-                    //  Create WorkoutRecord for the new Trainee
-                    WorkoutRecordDAO workoutRecordDAO = new WorkoutRecordDAO();
-                    WorkoutRecord workoutRecord = workoutRecordDAO.addWorkoutRecord();
-
-                    //  Link user to WorkoutRecord in the relation table
-                    if (workoutRecord != null) {
-                        linkWorkoutRecordToUser(userId, workoutRecord.getId());
-                    }
-                    return trainee;
+                    System.out.println("Trainee added successfully with ID: " + userId);
+                    return new Trainee(userId, name, age);
+                } else {
+                    System.out.println("Failed to get generated user ID.");
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null; // Error
-    }
-
-    //  Function to Link WorkoutRecord to User in the Relation Table
-    private void linkWorkoutRecordToUser(int userId, int workoutRecordId) {
-        String sql = "INSERT INTO WorkoutRecords_AppUser (user_id, wr_id) VALUES (?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, userId);
-            stmt.setInt(2, workoutRecordId);
-            stmt.executeUpdate();
-            System.out.println("WorkoutRecord linked to Trainee successfully!");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        return null; // Insertion failed
     }
 
     // READ: Get all users (returning mixed Trainee & PT objects)
@@ -146,6 +135,28 @@ public class TraineeDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public WorkoutRecord getWorkoutRecordByUserId(int userId) {
+        String sql = "SELECT wr.wr_id, wr.last_edit_date " +
+                "FROM WorkoutRecords wr " +
+                "JOIN WorkoutRecords_AppUser wra ON wr.wr_id = wra.wr_id " +
+                "WHERE wra.user_id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int id = rs.getInt("wr_id");
+                    Date creationDate = rs.getDate("last_edit_date");
+                    WorkoutRecord record = new WorkoutRecord(id);
+                    // You might want to fetch more details of the WorkoutRecord if needed
+                    return record;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
 
