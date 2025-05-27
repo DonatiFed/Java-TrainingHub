@@ -10,4 +10,9 @@ public class HypertrophyExerciseSetter implements ExerciseIntensitySetter {
     public int setNReps() {
         return 8; // 8-12 reps for hypertrophy
     }
+
+    @Override
+    public String toString() {
+        return "Hypertrophy";
+    }
 }

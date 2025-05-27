@@ -45,4 +45,15 @@ public class WorkoutPlanController {
         }
         workoutPlanDAO.deleteWorkoutPlan(wpId);
     }
+
+    // Add Workout4Plan to WorkoutPlan
+    public void addWorkout4PlanToWorkoutPlan(int wpId, int w4pId) {
+        if (wpId <= 0 || w4pId <= 0) {
+            System.err.println("Invalid WorkoutPlan ID or Workout4Plan ID.");
+            return;
+        }
+
+        workoutPlanDAO.addWorkout4PlanToWorkoutPlan(wpId, w4pId);
+        System.out.println("Workout4Plan added to WorkoutPlan successfully.");
+    }
 }

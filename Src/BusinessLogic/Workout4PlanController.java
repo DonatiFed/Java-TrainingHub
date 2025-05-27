@@ -1,7 +1,8 @@
 package BusinessLogic;
 
-import Model.WorkoutManagement.Workout4Plan;
 import Model.WorkoutManagement.Exercise;
+import Model.WorkoutManagement.Workout4Plan;
+import ORM.ExerciseDAO;
 import ORM.Workout4PlanDAO;
 
 import java.util.List;
@@ -19,62 +20,99 @@ public class Workout4PlanController {
         this.w4pDAO = w4pDAO;
     }
 
-    // CREATE: Add a Workout4Plan
     public Workout4Plan createWorkout4Plan(String dayOfWeek, String strategyType) {
         if (dayOfWeek == null || dayOfWeek.isBlank() || strategyType == null || strategyType.isBlank()) {
             System.err.println("Day of week and strategy type cannot be null or blank.");
             return null;
         }
-        return w4pDAO.addWorkout4Plan(dayOfWeek, strategyType);
+        Workout4Plan plan = w4pDAO.addWorkout4Plan(dayOfWeek, strategyType);
+        if (plan != null) {
+            System.out.println("Workout4Plan created successfully.");
+        } else {
+            System.out.println("Failed to create Workout4Plan.");
+        }
+        return plan;
     }
 
-    // READ: Get all Workout4Plans
     public List<Workout4Plan> getAllWorkout4Plans() {
-        return w4pDAO.getAllWorkout4Plans();
+        List<Workout4Plan> plans = w4pDAO.getAllWorkout4Plans();
+        if (plans == null || plans.isEmpty()) {
+            System.out.println("No Workout4Plans found.");
+        }
+        return plans;
     }
 
-    // READ: Get Workout4Plan by ID
     public Workout4Plan getWorkout4PlanById(int id) {
         if (id <= 0) {
             System.err.println("Invalid Workout4Plan ID.");
             return null;
         }
-        return w4pDAO.getWorkout4PlanById(id);
+        Workout4Plan plan = w4pDAO.getWorkout4PlanById(id);
+        if (plan == null) {
+            System.out.println("Workout4Plan not found for ID: " + id);
+        }
+        return plan;
     }
 
-    // UPDATE: Modify Workout4Plan (day or strategy)
     public void updateWorkout4Plan(int id, String newDayOfWeek, String newStrategy) {
         if (id <= 0 || newDayOfWeek == null || newDayOfWeek.isBlank() || newStrategy == null || newStrategy.isBlank()) {
             System.err.println("Invalid inputs for updating Workout4Plan.");
             return;
         }
         w4pDAO.updateWorkout4Plan(id, newDayOfWeek, newStrategy);
+        System.out.println("Workout4Plan updated successfully.");
     }
 
-    // DELETE: Remove a Workout4Plan
     public void deleteWorkout4Plan(int id) {
         if (id <= 0) {
             System.err.println("Invalid Workout4Plan ID.");
             return;
         }
         w4pDAO.deleteWorkout4Plan(id);
+        System.out.println("Workout4Plan deleted successfully.");
     }
 
-    // ADD: Link an Exercise to a Workout4Plan
     public void addExerciseToWorkout4Plan(int w4pId, int exId) {
         if (w4pId <= 0 || exId <= 0) {
             System.err.println("Invalid IDs for Workout4Plan or Exercise.");
             return;
         }
+
+        Workout4Plan plan = w4pDAO.getWorkout4PlanById(w4pId);
+        ExerciseDAO exerciseDAO = new ExerciseDAO();
+        Exercise exercise = exerciseDAO.getExerciseById(exId);
+
+
+        if (plan == null) {
+            System.err.println("Workout4Plan not found with ID: " + w4pId);
+            return;
+        }
+
+        if (exercise == null) {
+            System.err.println("Exercise not found with ID: " + exId);
+            return;
+        }
+
+        if (!plan.getStrategy().toString().equalsIgnoreCase(exercise.getStrategy().toString())) {
+            System.err.println("Cannot add Exercise with strategy '" + exercise.getStrategy().toString() +
+                    "' to Workout4Plan with strategy '" + plan.getStrategy().toString() + "'.");
+            return;
+        }
+
         w4pDAO.addExerciseToWorkout4Plan(w4pId, exId);
+        System.out.println("Exercise added to Workout4Plan successfully.");
     }
 
-    // GET: Exercises for a Workout4Plan
     public List<Exercise> getExercisesForWorkout4Plan(int w4pId) {
         if (w4pId <= 0) {
             System.err.println("Invalid Workout4Plan ID.");
             return null;
         }
-        return w4pDAO.getExercisesForWorkout4Plan(w4pId);
+        List<Exercise> exercises = w4pDAO.getExercisesForWorkout4Plan(w4pId);
+        if (exercises == null || exercises.isEmpty()) {
+            System.out.println("No exercises found for Workout4Plan ID: " + w4pId);
+        }
+        return exercises;
     }
+
 }

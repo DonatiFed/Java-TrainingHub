@@ -20,7 +20,7 @@ public class ExerciseDAO {
         this.connection = connection;
     }
 
-
+ // adding exercises that are part of the workout records
 public Exercise addExercise(String name, String description, String equipment, int sets, int reps, int weight, String strategyType) throws SQLException{
         // Validate inputs before attempting to insert
         if (name == null || name.isEmpty()) {
@@ -79,7 +79,7 @@ public Exercise addExercise(String name, String description, String equipment, i
         }
     }
 
-
+//adding exercise that will be part of the workoutplan
     public Exercise addExercise4plan(String name, String description, String equipment, String strategyType) throws SQLException {
         // Validate inputs
         if (name == null || name.isEmpty()) {
@@ -103,7 +103,7 @@ public Exercise addExercise(String name, String description, String equipment, i
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next()) {
                     // Already exists — just return it
-                    int existingId = rs.getInt("exercise_id");
+                    int existingId = rs.getInt(1);
                     String existingDescription = rs.getString("exercise_description");
                     String existingEquipment = rs.getString("exercise_equipment");
 
@@ -114,7 +114,7 @@ public Exercise addExercise(String name, String description, String equipment, i
         }
 
         // Step 2: Adjust the sequence before inserting new one
-        adjustSequence();
+          adjustSequence();
 
         // Step 3: Proceed with insertion
         String insertSql = "INSERT INTO Exercises (exercise_name, exercise_description, exercise_equipment, exercise_N_sets, exercise_N_reps, exercise_weight, exercise_strategy) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -152,25 +152,49 @@ public Exercise addExercise(String name, String description, String equipment, i
     //( booleano per capire se l'es è del plan o per record )
     // però no booleano per workout4record di 2 trainee che svolgono stesso es stesse rep pk dovrebbe esssere colonna in piu non boooleana  , ma con id trainee
 
+    // Only adjust sequence if there's actually a gap
     private void adjustSequence() {
-        String sql = "SELECT MAX(ex_id) FROM exercises";
+        try {
+            // Get the maximum ID from the table
+            String maxIdSql = "SELECT COALESCE(MAX(ex_id), 0) FROM exercises";
+            int maxId = 0;
 
-        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                int maxId = rs.getInt(1);
-                if (maxId > 0) {
-                    String resetSeqSql = "SELECT setval('exercises_ex_id_seq', ?, false)";
-                    try (PreparedStatement resetStmt = connection.prepareStatement(resetSeqSql)) {
-                        resetStmt.setInt(1, maxId); // Set the sequence to the max ID in the table
-                        resetStmt.executeUpdate();
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(maxIdSql)) {
+                if (rs.next()) {
+                    maxId = rs.getInt(1);
+                }
+            }
+
+            // Set the sequence to maxId + 1 using setval()
+            // setval() returns a value, so we need to use executeQuery()
+            if (maxId > 0) {
+                String setvalSql = "SELECT setval('exercises_ex_id_seq', ?)";
+                try (PreparedStatement resetStmt = connection.prepareStatement(setvalSql)) {
+                    resetStmt.setInt(1, maxId + 1); // Next value will be maxId + 1
+                    try (ResultSet seqRs = resetStmt.executeQuery()) {
+                        // Consume the result (we don't need the value, just need to execute)
+                        if (seqRs.next()) {
+                            System.out.println("Sequence adjusted to: " + seqRs.getInt(1));
+                        }
+                    }
+                }
+            } else {
+                // If table is empty, reset sequence to 1
+                String setvalSql = "SELECT setval('exercises_ex_id_seq', 1, false)"; // false means next nextval() will return 1
+                try (Statement stmt = connection.createStatement();
+                     ResultSet rs = stmt.executeQuery(setvalSql)) {
+                    if (rs.next()) {
+                        System.out.println("Sequence reset to start from: 1");
                     }
                 }
             }
+
         } catch (SQLException e) {
+            System.err.println("Error adjusting sequence: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
 
 
     public List<Exercise> getAllExercises() {

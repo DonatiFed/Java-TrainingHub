@@ -12,7 +12,7 @@ public class Exercise {
     private ExerciseIntensitySetter strategy;
 
 
-    // With Strategy Constructor(4Plan)
+    // (4Plan)
     public Exercise(int id,String name, String description, String equipment, ExerciseIntensitySetter strategy){
         this.id = id;
         this.name=name;
@@ -23,7 +23,7 @@ public class Exercise {
        // this.weight = null;   //  essendo weight un int invece che integer è settato di base=0
         this.strategy=strategy;
     }
-    // Without Strategy Constructor(4Record)
+    // (4Record)
     public Exercise(int id ,String name,String description, String equipment, int n_sets, int n_reps, int weight,ExerciseIntensitySetter strategy) {
         this.id = id;
         this.name = name;

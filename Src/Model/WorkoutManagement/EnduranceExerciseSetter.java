@@ -11,4 +11,9 @@ public class EnduranceExerciseSetter implements ExerciseIntensitySetter {
     public int setNReps() {
         return 15; // 15+ reps for endurance
     }
+
+    @Override
+    public String toString() {
+        return "Endurance";
+    }
 }

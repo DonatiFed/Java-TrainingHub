@@ -52,11 +52,6 @@ public class PersonalTrainerController {
         System.out.println("✅ Assigned WorkoutPlan " + workoutPlanId + " to Trainee " + traineeId + " by PT " + ptId);
     }
 
-    public void assignWorkoutPlanToTrainee(int personalTrainerId, int traineeId, int workoutPlanId) {
-        // Call DAO method that links the plan to the trainee and PT
-        wpDAO.assignWorkoutPlanToUser(workoutPlanId, traineeId, personalTrainerId);
-    }
-
     public List<PersonalTrainer> getAllPersonalTrainers() {
         return ptDAO.getAllPersonalTrainers();
     }

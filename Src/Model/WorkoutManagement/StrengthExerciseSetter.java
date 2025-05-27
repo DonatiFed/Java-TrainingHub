@@ -10,4 +10,9 @@ public class StrengthExerciseSetter implements ExerciseIntensitySetter {
     public int setNReps() {
         return 3; // 3 reps for strength
     }
+
+    @Override
+    public String toString() {
+        return "Strength";
+    }
 }

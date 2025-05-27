@@ -182,7 +182,7 @@ class ExerciseDAOTest {
             verify(mockPreparedStatement).getGeneratedKeys(); // From the insert statement
 
             // Verify adjustSequence was called via mockStatement (called once)
-            verify(mockStatement).executeQuery(startsWith("SELECT MAX"));
+            verify(mockStatement).executeQuery(startsWith("SELECT COALESCE"));
 
         }
 
@@ -215,7 +215,7 @@ class ExerciseDAOTest {
 
         // 3. Mock the data retrieval from the existing record in the ResultSet
         //    NOTE: Using "exercise_id" as per the DAO code provided, although "ex_id" might be correct schema.
-        when(mockResultSet.getInt(eq("exercise_id"))).thenReturn(existingId);
+        when(mockResultSet.getInt(eq(1))).thenReturn(existingId);
         when(mockResultSet.getString(eq("exercise_description"))).thenReturn(existingDescription);
         when(mockResultSet.getString(eq("exercise_equipment"))).thenReturn(existingEquipment);
 
