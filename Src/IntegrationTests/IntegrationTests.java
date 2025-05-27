@@ -61,6 +61,10 @@ public class IntegrationTests {
 
 
 
+
+    /**
+     * Tests the scenario that a trainee can view the workout plan assigned to him by their personal trainer.
+     */
     @Test
     void testTraineeCanViewWorkoutPlanAssignedByTheirPT() throws SQLException {
         // DAOs and controllers use connection initialized by @BeforeEach
@@ -89,6 +93,11 @@ public class IntegrationTests {
         assertTrue(traineePlans.stream().anyMatch(plan -> plan.getId() == testWorkoutPlan.getId()));
     }
 
+
+
+    /**
+     * Tests that a personal trainer can view the workout records of a trainee they are assigned to.
+     */
     @Test
     void testPersonalTrainerCanViewTraineeWorkoutRecords() throws SQLException {
         // DAOs and controllers use connection initialized by @BeforeEach
@@ -115,6 +124,12 @@ public class IntegrationTests {
         assertEquals(expectedRecord.getId(), actualRecord.getId());
     }
 
+
+
+    /**
+     * Tests the constraint that exercises added to a Workout4Plan must have the same strategy
+     * as the Workout4Plan itself.
+     */
     @Test
     void testExercisesInsideWorkout4PlansAreOfSameStrategy() throws SQLException {
         // Setup
@@ -188,5 +203,194 @@ public class IntegrationTests {
     }
 
 
+    /**
+     * Tests the scenario where a personal trainer updates a workout plan that has been assigned to a trainee,
+     * ensuring the trainee sees the updated plan.
+     */
+    @Test
+    void testPTUpdatesWorkoutPlanAssignedToTrainee() throws SQLException {
+        PersonalTrainerDAO ptDAO = new PersonalTrainerDAO(connection);
+        TraineeDAO traineeDAO = new TraineeDAO(connection);
+        WorkoutPlanDAO wpDAO = new WorkoutPlanDAO(connection);
+        Workout4PlanDAO w4pDAO = new Workout4PlanDAO(connection);
+        WorkoutRecordDAO wrDAO = new WorkoutRecordDAO(connection);
+        WorkoutPlanController wpController = new WorkoutPlanController(wpDAO);
+        PersonalTrainerController ptController = new PersonalTrainerController(ptDAO, wpDAO, wrDAO); // No wrDAO needed here
+        TraineeController traineeController = new TraineeController(traineeDAO, wpDAO, wrDAO);     // No wrDAO needed here
+        Workout4PlanController w4pController = new Workout4PlanController(w4pDAO);
 
+        // Create PT and Trainee
+        PersonalTrainer pt = ptController.registerPersonalTrainer("PT Update", 30);
+
+        PersonalTrainer second_pt = ptController.registerPersonalTrainer("PT Dummy", 35);
+        Trainee trainee = traineeController.registerTrainee("Trainee View", 25);
+
+        // Create and assign a WorkoutPlan
+        WorkoutPlan initialPlan = wpController.createWorkoutPlan();
+        ptController.followTrainee(pt.getId(), trainee.getId(), initialPlan.getId());
+
+        //secondpt plan
+        WorkoutPlan secondPlan = wpController.createWorkoutPlan();
+        ptController.followTrainee(second_pt.getId(), trainee.getId(), secondPlan.getId());
+
+
+        // Add a Workout4Plan to the initial WorkoutPlan
+        Workout4Plan mondayPlan = w4pController.createWorkout4Plan("Monday", "Endurance");
+        wpController.addWorkout4PlanToWorkoutPlan(initialPlan.getId(), mondayPlan.getId());
+
+        Workout4Plan tuesdayPlan = w4pController.createWorkout4Plan("Tuesday", "Hypertrophy");
+        wpController.addWorkout4PlanToWorkoutPlan(initialPlan.getId(), tuesdayPlan.getId());
+
+        Workout4Plan fridayPlan = w4pController.createWorkout4Plan("Friday", "Strength");
+        wpController.addWorkout4PlanToWorkoutPlan(initialPlan.getId(), fridayPlan.getId());
+
+        // Retrieve the trainee's workout plan and check the initial state
+        List<WorkoutPlan> traineePlansInitial = traineeController.getWorkoutPlansByTraineeId(trainee.getId());
+        assertTrue(traineePlansInitial.stream().anyMatch(p -> p.getId() == initialPlan.getId()));
+
+        WorkoutPlan traineeViewOfPlansInitial = traineePlansInitial.stream().filter(p -> p.getId() == initialPlan.getId()).findFirst().orElse(null);
+        assertNotNull(traineeViewOfPlansInitial);
+        assertTrue(wpDAO.getWorkout4PlansByWorkoutPlanId(traineeViewOfPlansInitial.getId()).stream()
+                .anyMatch(w4p -> w4p.getId() == mondayPlan.getId() && w4p.getDay().equals("Monday")));
+
+        // PT adds another Workout4Plan to the same WorkoutPlan
+        Workout4Plan wednesdayPlan = w4pController.createWorkout4Plan("Wednesday", "Strength");
+        wpController.addWorkout4PlanToWorkoutPlan(initialPlan.getId(), wednesdayPlan.getId());
+
+        // Retrieve the trainee's workout plans again and check for the update
+        List<WorkoutPlan> traineePlansUpdated = traineeController.getWorkoutPlansByTraineeId(trainee.getId());
+        assertTrue(traineePlansUpdated.stream().anyMatch(p -> p.getId() == initialPlan.getId()));
+
+        WorkoutPlan traineeViewOfInitialPlanUpdated = traineePlansUpdated.stream().filter(p -> p.getId() == initialPlan.getId()).findFirst().orElse(null);
+        assertNotNull(traineeViewOfInitialPlanUpdated);
+
+        List<Workout4Plan> updatedW4Ps = wpDAO.getWorkout4PlansByWorkoutPlanId(traineeViewOfInitialPlanUpdated.getId());
+        assertEquals(4, updatedW4Ps.size());
+        assertTrue(updatedW4Ps.stream().anyMatch(w4p -> w4p.getId() == mondayPlan.getId() && w4p.getDay().equals("Monday")));
+        assertTrue(updatedW4Ps.stream().anyMatch(w4p -> w4p.getId() == wednesdayPlan.getId() && w4p.getDay().equals("Wednesday")));
+    }
+
+
+
+
+    /**
+     *
+     * Tests the deletion and editing of a Workout4Plan that is part of a WorkoutPlan.
+     */
+    @Test
+    void testDeleteAndEditWorkout4PlanFromWorkoutPlan() throws SQLException {
+        WorkoutPlanDAO wpDAO = new WorkoutPlanDAO(connection);
+        Workout4PlanDAO w4pDAO = new Workout4PlanDAO(connection);
+        WorkoutPlanController wpController = new WorkoutPlanController(wpDAO);
+        Workout4PlanController w4pController = new Workout4PlanController(w4pDAO);
+
+        // Create a WorkoutPlan
+        WorkoutPlan plan = wpController.createWorkoutPlan();
+        assertNotNull(plan);
+
+        // Create a Workout4Plan to add and then potentially edit/delete
+        Workout4Plan initialMondayPlan = w4pController.createWorkout4Plan("Monday", "Endurance");
+        assertNotNull(initialMondayPlan);
+        wpController.addWorkout4PlanToWorkoutPlan(plan.getId(), initialMondayPlan.getId());
+
+        // Create another Workout4Plan
+        Workout4Plan fridayPlan = w4pController.createWorkout4Plan("Friday", "Strength");
+        assertNotNull(fridayPlan);
+        wpController.addWorkout4PlanToWorkoutPlan(plan.getId(), fridayPlan.getId());
+
+        List<Workout4Plan> initialPlansInWorkoutPlan = wpDAO.getWorkout4PlansByWorkoutPlanId(plan.getId());
+        assertEquals(2, initialPlansInWorkoutPlan.size());
+
+        // --- Test Deletion ---
+        // Delete the Monday plan
+        wpDAO.removeWorkout4PlanFromWorkoutPlan(plan.getId(), initialMondayPlan.getId());
+
+        // Verify that it's deleted
+        List<Workout4Plan> plansAfterDeletion = wpDAO.getWorkout4PlansByWorkoutPlanId(plan.getId());
+        assertEquals(1, plansAfterDeletion.size());
+        assertEquals(fridayPlan.getId(), plansAfterDeletion.get(0).getId());
+
+        // --- Test Editing ---
+        // Get the remaining Friday plan
+        Workout4Plan planToEdit = wpDAO.getWorkout4PlansByWorkoutPlanId(plan.getId()).get(0);
+        w4pController.updateWorkout4Plan(planToEdit.getId(), "Saturday", "Hypertrophy");
+
+        // Retrieve the updated plan and verify the changes
+        Workout4Plan updatedPlan = w4pController.getWorkout4PlanById(planToEdit.getId());
+        assertNotNull(updatedPlan);
+        assertEquals("Saturday", updatedPlan.getDay());
+        assertEquals("Hypertrophy", updatedPlan.getStrategy().toString());
+    }
+
+
+    /**
+     * Tests the process of adding workout sessions (Workout4Records) with multiple exercises
+     * to a user's workout history (WorkoutRecord).
+     */
+
+    @Test
+    void testAddWorkoutSessionsWithMultipleExercisesToUserWorkoutRecord() throws SQLException {
+        TraineeDAO traineeDAO = new TraineeDAO(connection);
+        WorkoutRecordDAO wrDAO = new WorkoutRecordDAO(connection);
+        Workout4RecordDAO w4rDAO = new Workout4RecordDAO(connection); // Corrected to Workout4RecordDAO
+        ExerciseDAO exDAO = new ExerciseDAO(connection);
+        TraineeController traineeController = new TraineeController(traineeDAO, null, wrDAO);
+        WorkoutRecordController wrController = new WorkoutRecordController(wrDAO);
+        Workout4RecordController w4rController = new Workout4RecordController(w4rDAO);
+        ExerciseController exController = new ExerciseController(exDAO);
+
+        // --- 1. Create a Trainee (and their WorkoutRecord) ---
+        Trainee trainee = traineeController.registerTrainee("Multi-Exercise User", 29);
+        assertNotNull(trainee);
+        WorkoutRecord userWorkoutRecord = wrController.getWorkoutRecordById(trainee.getId());
+        assertNotNull(userWorkoutRecord);
+
+        // --- 2. Create Workout4Records (sessions) ---
+        Workout4Record session1 = w4rController.createWorkout4Record("2025-05-27");
+        assertNotNull(session1);
+        Workout4Record session2 = w4rController.createWorkout4Record("2025-05-29");
+        assertNotNull(session2);
+
+        // --- 3. Link sessions to the user's record ---
+        wrController.linkWorkout4RecordToWorkoutRecord(userWorkoutRecord.getId(), session1.getId());
+        wrController.linkWorkout4RecordToWorkoutRecord(userWorkoutRecord.getId(), session2.getId());
+
+        // --- 4. Create multiple Exercises ---
+        Exercise benchPress = exController.createExerciseForPlan("Bench Press", "...", "Barbell", "Strength");
+        assertNotNull(benchPress);
+        Exercise squat = exController.createExerciseForPlan("Squat", "...", "Barbell", "Strength");
+        assertNotNull(squat);
+        Exercise running = exController.createExerciseForPlan("Running", "...", "Treadmill", "Endurance");
+        assertNotNull(running);
+        Exercise plank = exController.createExerciseForPlan("Plank", "...", "Bodyweight", "Endurance");
+        assertNotNull(plank);
+
+        // --- 5. Add multiple Exercises to the Workout4Records (sessions) ---
+        w4rController.addExerciseToWorkout4Record(session1.getId(), benchPress.getId());
+        w4rController.addExerciseToWorkout4Record(session1.getId(), squat.getId());
+        w4rController.addExerciseToWorkout4Record(session2.getId(), running.getId());
+        w4rController.addExerciseToWorkout4Record(session2.getId(), plank.getId());
+
+        // --- 6. Verify the links and contents ---
+        // Check linked sessions
+        List<Workout4Record> sessionsInHistory = wrController.getWorkout4RecordsForWorkoutRecord(userWorkoutRecord.getId());
+        assertNotNull(sessionsInHistory);
+        assertEquals(2, sessionsInHistory.size());
+        assertTrue(sessionsInHistory.stream().anyMatch(s -> s.getId() == session1.getId()));
+        assertTrue(sessionsInHistory.stream().anyMatch(s -> s.getId() == session2.getId()));
+
+        // Check exercises in session 1
+        List<Exercise> session1Exercises = w4rController.getExercisesForWorkout4Record(session1.getId());
+        assertNotNull(session1Exercises);
+        assertEquals(2, session1Exercises.size());
+        assertTrue(session1Exercises.stream().anyMatch(e -> e.getId() == benchPress.getId()));
+        assertTrue(session1Exercises.stream().anyMatch(e -> e.getId() == squat.getId()));
+
+        // Check exercises in session 2
+        List<Exercise> session2Exercises = w4rController.getExercisesForWorkout4Record(session2.getId());
+        assertNotNull(session2Exercises);
+        assertEquals(2, session2Exercises.size());
+        assertTrue(session2Exercises.stream().anyMatch(e -> e.getId() == running.getId()));
+        assertTrue(session2Exercises.stream().anyMatch(e -> e.getId() == plank.getId()));
+    }
 }
