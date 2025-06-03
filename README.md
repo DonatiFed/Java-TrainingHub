@@ -91,10 +91,14 @@ The project follows the standard Maven directory layout:
     * Locate the main class and run it.
 
 ## Running Tests
-All tests can be executed using Maven:
-```bash
-mvn test
-```
+
+All tests can be executed directly within your Integrated Development Environment (IDE), such as IntelliJ IDEA.
+
+* **In IntelliJ IDEA:**
+    * Navigate to a specific test class (e.g., in `src/test/java/`).
+    * Right-click on the test class or a specific test method.
+    * Select "Run 'YourTestClassName'" or "Run 'yourTestMethodName()'".
+    * Alternatively, you can run all tests in the project by right-clicking on the `src/test/java` directory and selecting "Run 'All Tests'".
 ## Future Enhancements
 
 We are continuously looking to evolve Java-TrainingHub to offer even more value to trainees and personal trainers. Planned future enhancements include:
